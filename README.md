@@ -6,7 +6,7 @@ Kedi temalı, sıralı ekran görüntüsü ve pano kuyruğu aracı (Windows 10/1
 
 Ekran görüntülerini, kopyaladığın metinleri ve PDF, DOCX gibi dosyaları sıraya diz, sonra tek Ctrl+V ile hepsini alındıkları sırayla yapıştır.
 
-**[Web sitesi ve indirme](https://umutugrasan.github.io/catail/)** · Ücretsiz ve açık kaynak ([MIT](LICENSE))
+**[Web sitesi ve indirme](https://catail-studio.github.io/catail/)** · Ücretsiz ve açık kaynak ([MIT](LICENSE))
 
 - **Yakalama:** bölge / tam ekran, çizim araçları, panoya kopyalama, PNG kaydetme, metin tanıma (OCR) ve çeviri, ekrandaki QR kodları okuyup bağlantıyı açma.
 - **Kuyruk:** seçim ekranından ekran görüntüleri, **Metin modu**nda her Ctrl+C sıraya eklenir. Dosyalar için mod gerekmez: Gezgin'de dosyaya sağ tıklayıp **Kuyruğa ekle** de (Windows 11'de "Daha fazla seçenek göster" altında), kuyruk açıksa rozete ya da panele sürükleyip bırak. Kuyruk doluyken Ctrl+V hepsini sırayla yapıştırır; 10 saniye içinde geri alınabilir.
@@ -18,7 +18,7 @@ Tüm veriler yereldir, telemetri yoktur.
 
 ## Kurulum
 
-[Web sitesinden](https://umutugrasan.github.io/catail/) ya da [Releases](https://github.com/umutugrasan/catail/releases) sayfasından `Catail_<sürüm>_x64-setup.exe` dosyasını indirip çalıştır. Kurulum kullanıcı klasörüne yapılır, yönetici izni istemez. Uygulama sistem tepsisine yerleşir; ayarlar için tepsi simgesine sağ tıkla → **Ayarlar** (ya da Başlat menüsünden Catail'i tekrar aç). Yeni sürümler uygulamanın içinden kurulabilir (Ayarlar → Güncellemeler).
+[Web sitesinden](https://catail-studio.github.io/catail/) ya da [Releases](https://github.com/Catail-Studio/catail-ss/releases) sayfasından `Catail_<sürüm>_x64-setup.exe` dosyasını indirip çalıştır. Kurulum kullanıcı klasörüne yapılır, yönetici izni istemez. Uygulama sistem tepsisine yerleşir; ayarlar için tepsi simgesine sağ tıkla → **Ayarlar** (ya da Başlat menüsünden Catail'i tekrar aç). Yeni sürümler uygulamanın içinden kurulabilir (Ayarlar → Güncellemeler).
 
 Kurulum dosyası henüz kod imzalı değildir; Windows "bilinmeyen yayımcı" uyarısı gösterirse **Ek bilgi → Yine de çalıştır**. Ayrıntılar ve sürüm çıkarma adımları: [docs/release.md](docs/release.md).
 
@@ -137,7 +137,7 @@ Test listesi: [docs/paste-matrix.md](docs/paste-matrix.md)
 
 ## Web sitesi
 
-Web sitesi bu depodan ayrı tutuluyor: https://umutugrasan.github.io/catail/
+Web sitesi bu depodan ayrı tutuluyor: [Catail-Studio/catail-studio.github.io](https://github.com/Catail-Studio/catail-studio.github.io), yayında https://catail-studio.github.io/
 
 ## Lisans
 

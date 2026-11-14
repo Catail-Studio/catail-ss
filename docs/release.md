@@ -1,6 +1,6 @@
 # Sürüm çıkarma
 
-Catail, GitHub Releases üzerinden dağıtılır ve kendini oradan günceller. Uygulama yalnızca `https://github.com/umutugrasan/catail/releases/latest/download/latest.json` adresini kontrol eder; başka hiçbir yere bağlanmaz ve hiçbir veri göndermez.
+Catail, GitHub Releases üzerinden dağıtılır ve kendini oradan günceller. Uygulama yalnızca `https://github.com/Catail-Studio/catail-ss/releases/latest/download/latest.json` adresini kontrol eder; başka hiçbir yere bağlanmaz ve hiçbir veri göndermez.
 
 ## Bir kerelik hazırlık
 
@@ -17,6 +17,8 @@ GitHub'da repo → **Settings → Secrets and variables → Actions → New repo
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Boş bırak (anahtar parolasız oluşturuldu) |
 
 ## Her sürümde
+
+> Etiket sürüm numarasıyla harfi harfine aynı olmalı (`0.9.8` için `v0.9.8`). Yanlış etiket, uygulamanın güncellemeyi indirememesine yol açar.
 
 1. Sürüm numarasını üç yerde aynı yap: `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json` (ör. `0.2.0`).
 2. Commit'le, ardından etiketi push'la:

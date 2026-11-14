@@ -13,7 +13,7 @@ use crate::i18n::{t, t_with};
 use crate::notify;
 
 /// The repository the releases live in (the same one tauri.conf.json's endpoint points at).
-const REPO: &str = "umutugrasan/catail";
+const REPO: &str = "Catail-Studio/catail-ss";
 /// How the download is going, sent to every window while an update comes in.
 pub const EVENT_PROGRESS: &str = "update:progress";
 /// Progress is sent at most this often; the download itself isn't slowed.
