@@ -17,6 +17,7 @@ import {
   plainAccentSet,
   settingsGet,
   settingsSave,
+  onUpdateProgress,
   updateCheck,
   updateInstall,
   type Animal,
@@ -28,6 +29,7 @@ import {
   type PasteMode,
   type Settings as SettingsModel,
   type UpdateInfo,
+  type UpdateProgress,
 } from "../../lib/ipc";
 import { PLAIN_PRESETS } from "../../lib/plainAccent";
 import { ColorPicker } from "../overlay/ColorPicker";
@@ -101,22 +103,31 @@ type UpdateState =
   | { kind: "checking" }
   | { kind: "none" }
   | { kind: "available"; info: UpdateInfo }
-  | { kind: "installing" }
-  | { kind: "error"; message: string };
+  | { kind: "confirm"; info: UpdateInfo }
+  | { kind: "installing"; info: UpdateInfo; progress: UpdateProgress | null }
+  | { kind: "error"; message: string; info?: UpdateInfo };
 
+/** How much of the download is in, from 0 to 1; null while the size isn't known yet. */
+const shareOf = (progress: UpdateProgress | null) =>
+  progress?.total ? Math.min(progress.downloaded / progress.total, 1) : null;
+
+// Most used first: the general things, then the look, the keys and how pasting goes; updates last.
 const PAGES = [
+  ["general", "settings.general"],
   ["theme", "settings.cat"],
   ["shortcuts", "settings.shortcuts"],
   ["paste", "settings.paste"],
   ["rules", "settings.app_rules"],
-  ["general", "settings.general"],
   ["updates", "settings.updates"],
 ] as const;
+
+/** How long the page waits after the last change before saving it (typing, a slider moving). */
+const SAVE_DELAY_MS = 300;
 type Page = (typeof PAGES)[number][0];
 
 export function Settings() {
   const worn = useWornTheme();
-  const [page, setPage] = useState<Page>("theme");
+  const [page, setPage] = useState<Page>("general");
   const [settings, setSettings] = useState<SettingsModel | null>(null);
   const [version, setVersion] = useState("");
   const [systemLanguage, setSystemLanguage] = useState("en");
@@ -131,17 +142,86 @@ export function Settings() {
     });
   }, []);
 
-  const change = useCallback((patch: Partial<SettingsModel>) => {
-    setSettings((current) => current && { ...current, ...patch });
-    setStatus({ kind: "idle" });
+  // Every change is saved by itself, a moment after the last one; there is no Save button.
+  // `pending` holds what still has to be written, so closing the window can't lose it.
+  const pending = useRef<SettingsModel | null>(null);
+  const saveTimer = useRef(0);
+  const savedTimer = useRef(0);
+
+  const flush = useCallback(async () => {
+    window.clearTimeout(saveTimer.current);
+    const next = pending.current;
+    if (!next) return;
+    pending.current = null;
+    try {
+      await settingsSave(next);
+      setStatus({ kind: "saved" });
+      window.clearTimeout(savedTimer.current);
+      savedTimer.current = window.setTimeout(() => setStatus({ kind: "idle" }), 1600);
+    } catch (message) {
+      // Not taken (a shortcut another app holds, say): say why and show what is really in use.
+      setStatus({ kind: "error", message: String(message) });
+      if (!pending.current) setSettings((await settingsGet()).settings);
+    }
   }, []);
+
+  const change = useCallback(
+    (patch: Partial<SettingsModel>) => {
+      setSettings((current) => {
+        if (!current) return current;
+        const next = { ...current, ...patch };
+        pending.current = next;
+        return next;
+      });
+      window.clearTimeout(saveTimer.current);
+      saveTimer.current = window.setTimeout(() => void flush(), SAVE_DELAY_MS);
+    },
+    [flush],
+  );
+
+  // Leaving the window (closing it, or the app going away) writes whatever is still waiting.
+  useEffect(() => {
+    const now = () => void flush();
+    const onHide = () => {
+      if (document.visibilityState === "hidden") now();
+    };
+    window.addEventListener("pagehide", now);
+    window.addEventListener("blur", now);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("pagehide", now);
+      window.removeEventListener("blur", now);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [flush]);
+
+  // A number box shows what was really stored once you leave it (values are kept in range).
+  const tidyNumbers = useCallback(async () => {
+    await flush();
+    const stored = (await settingsGet()).settings;
+    setSettings(
+      (current) =>
+        current && {
+          ...current,
+          sequential_delay_ms: stored.sequential_delay_ms,
+          batch_restore_delay_ms: stored.batch_restore_delay_ms,
+          app_rules: stored.app_rules.length === current.app_rules.length ? stored.app_rules : current.app_rules,
+        },
+    );
+  }, [flush]);
 
   const setHotkey = useCallback(
     (key: keyof HotkeyMap) => (accelerator: string) => {
-      setSettings((current) => current && { ...current, hotkeys: { ...current.hotkeys, [key]: accelerator } });
-      setStatus({ kind: "idle" });
+      setSettings((current) => {
+        if (!current) return current;
+        const next = { ...current, hotkeys: { ...current.hotkeys, [key]: accelerator } };
+        pending.current = next;
+        return next;
+      });
+      // A shortcut is a single deliberate pick: no reason to wait.
+      void Promise.resolve().then(flush);
     },
-    [],
+    [flush],
   );
 
   const pickCat = (cat: Cat) => {
@@ -188,18 +268,6 @@ export function Settings() {
     change({ app_rules: settings.app_rules.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)) });
   };
 
-  const save = async () => {
-    if (!settings) return;
-    try {
-      await settingsSave(settings);
-      // Show what was actually stored (numbers clamped, rules tidied).
-      setSettings((await settingsGet()).settings);
-      setStatus({ kind: "saved" });
-    } catch (message) {
-      setStatus({ kind: "error", message: String(message) });
-    }
-  };
-
   const check = async () => {
     setUpdate({ kind: "checking" });
     try {
@@ -210,14 +278,25 @@ export function Settings() {
     }
   };
 
-  const install = async () => {
-    setUpdate({ kind: "installing" });
+  // Installing: asked first, then the download fills a bar; the app closes and the installer
+  // opens the new version. A failure leaves the update ready to try again.
+  const install = async (info: UpdateInfo) => {
+    setUpdate({ kind: "installing", info, progress: null });
+    const stop = await onUpdateProgress((progress) =>
+      setUpdate((current) => (current.kind === "installing" ? { ...current, progress } : current)),
+    );
     try {
-      await updateInstall(); // restarts the app on success
+      await updateInstall(); // the app closes on success
     } catch (message) {
-      setUpdate({ kind: "error", message: String(message) });
+      setUpdate({ kind: "error", message: String(message), info });
+    } finally {
+      stop();
     }
   };
+
+  // The update a button can offer: the one found, or the one that just failed to install.
+  const offered = update.kind === "available" || update.kind === "error" ? update.info : undefined;
+  const share = update.kind === "installing" ? shareOf(update.progress) : null;
 
   if (!settings) return <main className="settings" />;
 
@@ -386,6 +465,7 @@ export function Settings() {
                 step={50}
                 value={settings.sequential_delay_ms}
                 onChange={(e) => change({ sequential_delay_ms: Number(e.target.value) })}
+                onBlur={() => void tidyNumbers()}
               />
             </label>
             <label className="field">
@@ -397,6 +477,7 @@ export function Settings() {
                 step={50}
                 value={settings.batch_restore_delay_ms}
                 onChange={(e) => change({ batch_restore_delay_ms: Number(e.target.value) })}
+                onBlur={() => void tidyNumbers()}
               />
             </label>
             <label className="field">
@@ -472,6 +553,7 @@ export function Settings() {
                           onChange={(e) =>
                             setRule(index, { delay_ms: e.target.value === "" ? null : Number(e.target.value) })
                           }
+                          onBlur={() => void tidyNumbers()}
                         />
                       </td>
                       <td>
@@ -586,40 +668,81 @@ export function Settings() {
             <img className="brand-logo brand-logo--dark-ink" src={studioLogo} alt="Catail Studio" />
             <img className="brand-logo brand-logo--light-ink" src={studioLogoLight} alt="" />
             <p className="muted">{t("settings.version", { version })}</p>
-            <div className="update">
-              {update.kind === "available" ? (
-                <button type="button" className="primary" onClick={() => void install()}>
-                  {t("settings.update_install", { version: update.info.version })}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={update.kind === "checking" || update.kind === "installing"}
-                  onClick={() => void check()}
+            {update.kind === "installing" ? (
+              <div className="update-progress" role="status">
+                <div
+                  className={`update-progress__bar${share === null ? " update-progress__bar--waiting" : ""}`}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={share === null ? undefined : Math.round(share * 100)}
                 >
-                  {t("settings.update_check")}
-                </button>
-              )}
-              <span className="muted">
-                {update.kind === "checking" && t("settings.update_checking")}
-                {update.kind === "none" && t("settings.update_none")}
-                {update.kind === "installing" && t("settings.update_installing")}
-                {update.kind === "error" && t("settings.update_error")}
-              </span>
-            </div>
+                  <i style={{ transform: `scaleX(${share ?? 0})` }} />
+                </div>
+                <span className="muted">
+                  {share === 1
+                    ? t("settings.update_restarting")
+                    : t("settings.update_downloading", {
+                        percent:
+                          share === null ? "" : new Intl.NumberFormat(uiLanguage(), { style: "percent" }).format(share),
+                      })}
+                </span>
+              </div>
+            ) : (
+              <div className="update">
+                {offered ? (
+                  <button type="button" className="primary" onClick={() => setUpdate({ kind: "confirm", info: offered })}>
+                    {t("settings.update_install", { version: offered.version })}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={update.kind === "checking" || update.kind === "confirm"}
+                    onClick={() => void check()}
+                  >
+                    {t("settings.update_check")}
+                  </button>
+                )}
+                <span className="muted">
+                  {update.kind === "checking" && t("settings.update_checking")}
+                  {update.kind === "none" && t("settings.update_none")}
+                  {update.kind === "error" && t("settings.update_error")}
+                </span>
+              </div>
+            )}
+            {update.kind === "error" && <p className="update-error-detail">{update.message}</p>}
+            {update.kind === "confirm" && (
+              <div className="update-dialog" role="dialog" aria-modal="true" aria-labelledby="update-dialog-title">
+                <div className="update-dialog__card">
+                  <LeapingCat size={64} />
+                  <h3 id="update-dialog-title">{t("settings.update_confirm_title", { version: update.info.version })}</h3>
+                  <p>{t("settings.update_confirm_body")}</p>
+                  <div className="update-dialog__actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => setUpdate({ kind: "available", info: update.info })}
+                    >
+                      {t("settings.update_later")}
+                    </button>
+                    <button type="button" className="primary" autoFocus onClick={() => void install(update.info)}>
+                      {t("settings.update_now")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         )}
       </div>
 
-      <footer className="settings__footer">
+      {/* Changes save themselves; this only says so, or why one couldn't be. */}
+      <footer className={`settings__footer settings__footer--${status.kind}`} aria-live="polite">
         <span className={status.kind === "error" ? "error" : "muted"}>
           {status.kind === "saved" && t("settings.saved")}
           {status.kind === "error" && status.message}
         </span>
-        <button type="button" className="primary" onClick={() => void save()}>
-          {t("settings.save")}
-        </button>
       </footer>
     </main>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { catsAround, useWornTheme } from "../../lib/cat";
 import { fatness } from "../../lib/catSeat";
@@ -22,7 +22,9 @@ import {
 import { t } from "../../lib/i18n";
 import {
   captureDeliver,
+  captureDeliverDesktop,
   captureOcr,
+  captureStitch,
   captureQr,
   openLink,
   captureDeliverAnnotated,
@@ -30,14 +32,17 @@ import {
   onWindowEvent,
   overlayCancel,
   overlayReady,
+  overlaySelectionChanged,
   overlaySelectionStarted,
   overlaySession,
   OverlayEvents,
   queueClear,
   textModeSet,
   type Delivery,
+  type DesktopRect,
   type OverlayInfo,
   type QrCode,
+  type SharedSelection,
 } from "../../lib/ipc";
 import {
   DEFAULT_COLOR,
@@ -57,17 +62,21 @@ import {
 import { ContextMenu } from "./ContextMenu";
 import { TextSelection } from "./TextSelection";
 import {
-  clampPoint,
+  boundsOf,
+  clampToAreas,
   containsPoint,
+  fromDesktop,
   handleAt,
   handleCursor,
-  moveRect,
+  moveRectWithin,
   rectFromPoints,
   resizeRect,
   sidebarPosition,
   sizeLabelPosition,
+  toDesktop,
   toImageRect,
   toolbarPosition,
+  withinMonitor,
   type Handle,
   type Point,
   type Rect,
@@ -123,6 +132,10 @@ export function Overlay() {
   const [qrCodes, setQrCodes] = useState<QrCode[]>([]);
   const sessionRef = useRef<number | null>(null);
   const [selection, setSelection] = useState<Rect | null>(null);
+  // Several monitors, one selection: the overlay holding it (`owned`) tells the others where it
+  // is, and they show their part of it (`remote`). Grabbing that part takes it over.
+  const [remote, setRemote] = useState<SharedSelection | null>(null);
+  const owned = useRef(false);
   const [drag, setDrag] = useState<Drag>({ kind: "none" });
   /** Selection edge under the pointer, for the resize cursor. */
   const [hover, setHover] = useState<Handle | null>(null);
@@ -258,6 +271,7 @@ export function Overlay() {
   }, []);
 
   const resetSelection = useCallback(() => {
+    owned.current = false;
     setSelection(null);
     setDrag({ kind: "none" });
     setHover(null);
@@ -276,6 +290,7 @@ export function Overlay() {
   // Pull the current session: on startup (window may be created mid-capture) and on refresh.
   const loadSession = useCallback(async () => {
     resetSelection();
+    setRemote(null);
     busy.current = false;
     setQrCodes([]);
     const next = await overlaySession();
@@ -288,8 +303,14 @@ export function Overlay() {
     const subscriptions = [
       onWindowEvent(OverlayEvents.refresh, () => void loadSession()),
       onWindowEvent(OverlayEvents.clearSelection, resetSelection),
+      // Another monitor's overlay has the selection now, or moved it: show its part here.
+      onWindowEvent<SharedSelection>(OverlayEvents.selection, (shared) => {
+        if (owned.current) resetSelection();
+        setRemote(shared);
+      }),
       onWindowEvent(OverlayEvents.reset, () => {
         resetSelection();
+        setRemote(null);
         sessionRef.current = null;
         setQrCodes([]);
         setInfo(null);
@@ -318,6 +339,50 @@ export function Overlay() {
       frameScale: info.width / window.innerWidth,
     });
   }, [shapes, draft, info, textDraft]);
+
+  // This monitor's corner on the desktop, and every monitor in this overlay's px.
+  const origin = useMemo(() => ({ x: info?.originX ?? 0, y: info?.originY ?? 0 }), [info]);
+  const areas = useMemo(() => {
+    const here = { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
+    if (!info || info.monitors.length === 0) return [here];
+    const scale = info.width / window.innerWidth;
+    return info.monitors.map((m) => fromDesktop(m, scale, origin));
+  }, [info, origin]);
+  const desktopBounds = useMemo(() => boundsOf(areas), [areas]);
+
+  // The selection held here, on the desktop plane, for the other overlays.
+  const drawn = shapes.length > 0;
+  useEffect(() => {
+    if (!info || !owned.current) return;
+    const scale = info.width / window.innerWidth;
+    void overlaySelectionChanged(selection && toDesktop(selection, scale, origin), drawn).catch(() => undefined);
+    if (!selection) owned.current = false;
+  }, [selection, drawn, info, origin]);
+
+  /** A selection over several monitors with its drawings, at full resolution, as PNG bytes. */
+  const composeDesktop = useCallback(
+    async (desktop: DesktopRect): Promise<Uint8Array | null> => {
+      const frame = frameRef.current;
+      if (!info || !frame) return null;
+      const scale = info.width / window.innerWidth;
+      const base = await createImageBitmap(new Blob([await captureStitch(desktop)], { type: "image/png" }));
+      const canvas = document.createElement("canvas");
+      canvas.width = desktop.width;
+      canvas.height = desktop.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(base, 0, 0);
+      drawShapes(ctx, shapes, {
+        k: scale,
+        origin: { x: (desktop.x - origin.x) / scale, y: (desktop.y - origin.y) / scale },
+        frame,
+        frameScale: scale,
+      });
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      return blob && new Uint8Array(await blob.arrayBuffer());
+    },
+    [info, shapes, origin],
+  );
 
   /** Selection with its drawings, at the frame's full resolution, as PNG bytes. */
   const compose = useCallback(async (): Promise<Uint8Array | null> => {
@@ -382,16 +447,22 @@ export function Overlay() {
       if (!info || !selection || busy.current) return;
       busy.current = true;
       if (action === "enqueue") await flyToBadge();
+      // Running onto another monitor: the pieces are put together into one picture.
+      const scale = info.width / window.innerWidth;
+      const desktop = toDesktop(selection, scale, origin);
+      const spans = !withinMonitor(desktop, { x: origin.x, y: origin.y, width: info.width, height: info.height });
       if (shapes.length > 0) {
-        const png = await compose();
+        const png = spans ? await composeDesktop(desktop) : await compose();
         if (png) await captureDeliverAnnotated(png, action);
+      } else if (spans) {
+        await captureDeliverDesktop(desktop, action);
       } else {
         // No drawings: Rust crops the frozen frame pixel for pixel.
         const rect = toImageRect(selection, info.width / window.innerWidth, info);
         await captureDeliver(rect, action);
       }
     },
-    [info, selection, shapes, compose, flyToBadge],
+    [info, selection, shapes, compose, composeDesktop, flyToBadge, origin],
   );
 
   // Once a queue exists, adding to it becomes the main action (Enter).
@@ -554,14 +625,21 @@ export function Overlay() {
     if (bar && bar.offsetWidth !== toolbarWidth) setToolbarWidth(bar.offsetWidth);
   });
 
-  const pointFrom = (e: ReactPointerEvent) => clampPoint({ x: e.clientX, y: e.clientY }, viewSize());
+  const pointFrom = (e: ReactPointerEvent) => clampToAreas({ x: e.clientX, y: e.clientY }, areas);
   const drawing = tool !== "select" && selection !== null;
 
   /** Selects this whole monitor. */
   const selectAll = useCallback(() => {
     if (!selection) void overlaySelectionStarted();
+    owned.current = true;
+    setRemote(null);
     setSelection({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight });
   }, [selection]);
+
+  // The selection as another monitor's overlay holds it, in this one's px.
+  const remoteRect =
+    !selection && remote?.rect && info ? fromDesktop(remote.rect, info.width / window.innerWidth, origin) : null;
+  const grabbable = remoteRect && !remote?.locked ? remoteRect : null;
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (menu) {
@@ -613,16 +691,29 @@ export function Overlay() {
       return;
     }
 
+    // The selection is over here from another monitor: its edge or inside takes it over, so it
+    // can be moved or stretched from this screen too. One with drawings stays where it is.
+    if (remoteRect && remote?.locked && containsPoint(remoteRect, p)) return;
+    let current = selection;
+    if (!current && grabbable && (handleAt(grabbable, p) || containsPoint(grabbable, p))) {
+      current = grabbable;
+      owned.current = true;
+      setRemote(null);
+      setSelection(grabbable);
+    }
+
     e.currentTarget.setPointerCapture(e.pointerId);
-    const handle = selection && handleAt(selection, p);
-    if (selection && handle) {
-      setDrag({ kind: "resize", handle, start: selection });
+    const handle = current && handleAt(current, p);
+    if (current && handle) {
+      setDrag({ kind: "resize", handle, start: current });
       return;
     }
-    if (selection && containsPoint(selection, p)) {
-      setDrag({ kind: "move", offset: { x: p.x - selection.x, y: p.y - selection.y } });
+    if (current && containsPoint(current, p)) {
+      setDrag({ kind: "move", offset: { x: p.x - current.x, y: p.y - current.y } });
       return;
     }
+    owned.current = true;
+    setRemote(null);
     setDrag({ kind: "select", anchor: p });
     setSelection({ x: p.x, y: p.y, width: 0, height: 0 });
     void overlaySelectionStarted();
@@ -633,14 +724,15 @@ export function Overlay() {
     if (drag.kind === "select") {
       setSelection(rectFromPoints(drag.anchor, p));
     } else if (drag.kind === "move" && selection) {
-      setSelection(moveRect(selection, { x: p.x - drag.offset.x, y: p.y - drag.offset.y }, viewSize()));
+      setSelection(moveRectWithin(selection, { x: p.x - drag.offset.x, y: p.y - drag.offset.y }, desktopBounds));
     } else if (drag.kind === "resize") {
       setSelection(resizeRect(drag.start, drag.handle, p));
     } else if (drag.kind === "none") {
       // Only over the bare screen or the selection; the bars keep their own cursors.
       const target = e.target as HTMLElement;
       const onSurface = target === e.currentTarget || target.classList.contains("overlay__selection");
-      const next = onSurface && selection && !drawing && !flying && !menu ? handleAt(selection, p) : null;
+      const grab = selection ?? grabbable;
+      const next = onSurface && grab && !drawing && !flying && !menu ? handleAt(grab, p) : null;
       if (next !== hover) setHover(next);
       const scale = info ? info.width / window.innerWidth : 1;
       const qr =
@@ -747,7 +839,10 @@ export function Overlay() {
     const reach = Math.hypot(dx, dy) + 70;
     return { "--look-x": (dx / reach).toFixed(3), "--look-y": (dy / reach).toFixed(3) };
   })();
-  const imageRect = selection && toImageRect(selection, scale, info);
+  const desktopRect = selection && toDesktop(selection, scale, origin);
+  // The mode bar (and the hint) is on one screen: where the selection is, or where the pointer
+  // was when nothing is selected yet.
+  const leads = selection !== null || (!remote?.rect && info.active);
   const settled =
     selection !== null && flying === null && (drag.kind === "none" || drag.kind === "draw" || drag.kind === "erase");
   const toolbarSize = { width: toolbarWidth, height: TOOLBAR_HEIGHT };
@@ -857,22 +952,25 @@ export function Overlay() {
 
       {flying ? (
         <div className="overlay__dim overlay__dim--fly" />
-      ) : selection ? (
+      ) : selection || remoteRect ? (
         <div
           className="overlay__selection"
           style={{
-            left: selection.x,
-            top: selection.y,
-            width: selection.width,
-            height: selection.height,
+            left: (selection ?? remoteRect)!.x,
+            top: (selection ?? remoteRect)!.y,
+            width: (selection ?? remoteRect)!.width,
+            height: (selection ?? remoteRect)!.height,
           }}
         >
-          {settled && !drawing && HANDLES.map((h) => <span key={h} className={`overlay__handle overlay__handle--${h}`} />)}
+          {selection &&
+            settled &&
+            !drawing &&
+            HANDLES.map((h) => <span key={h} className={`overlay__handle overlay__handle--${h}`} />)}
         </div>
       ) : (
         <>
           <div className="overlay__dim" />
-          <div className="overlay__hint">{t("overlay.hint")}</div>
+          {leads && <div className="overlay__hint">{t("overlay.hint")}</div>}
         </>
       )}
 
@@ -884,38 +982,40 @@ export function Overlay() {
         </div>
       )}
 
-      <div
-        className={`overlay__modes${flying ? " overlay__modes--hidden" : ""}${booping ? " boop" : ""}`}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <CatEar side="left" />
-        <CatEar side="right" />
-        <Whiskers side="left" />
-        <Whiskers side="right" />
-        <TurtleBar />
-        <MonkeyBar />
-        <FrogBar />
-        <CapybaraBar />
-        <button
-          type="button"
-          className={info.textMode ? undefined : "active"}
-          title={t("overlay.mode_screenshot_title")}
-          onClick={() => info.textMode && void setTextMode(false)}
+      {leads && (
+        <div
+          className={`overlay__modes${flying ? " overlay__modes--hidden" : ""}${booping ? " boop" : ""}`}
+          onPointerDown={(e) => e.stopPropagation()}
         >
-          <CameraIcon />
-          {t("overlay.mode_screenshot")}
-        </button>
-        <CatNose boops={boops} title={t("overlay.nose")} onBoop={boop} />
-        <button
-          type="button"
-          className={info.textMode ? "active" : undefined}
-          title={t(info.textMode ? "overlay.mode_text_on_title" : "overlay.mode_text_title")}
-          onClick={() => void setTextMode(!info.textMode)}
-        >
-          <TextModeIcon />
-          {t("overlay.mode_text")}
-        </button>
-      </div>
+          <CatEar side="left" />
+          <CatEar side="right" />
+          <Whiskers side="left" />
+          <Whiskers side="right" />
+          <TurtleBar />
+          <MonkeyBar />
+          <FrogBar />
+          <CapybaraBar />
+          <button
+            type="button"
+            className={info.textMode ? undefined : "active"}
+            title={t("overlay.mode_screenshot_title")}
+            onClick={() => info.textMode && void setTextMode(false)}
+          >
+            <CameraIcon />
+            {t("overlay.mode_screenshot")}
+          </button>
+          <CatNose boops={boops} title={t("overlay.nose")} onBoop={boop} />
+          <button
+            type="button"
+            className={info.textMode ? "active" : undefined}
+            title={t(info.textMode ? "overlay.mode_text_on_title" : "overlay.mode_text_title")}
+            onClick={() => void setTextMode(!info.textMode)}
+          >
+            <TextModeIcon />
+            {t("overlay.mode_text")}
+          </button>
+        </div>
+      )}
 
       {picked && !flying && (
         <TextSelection shape={picked} onDrag={dragText} onChange={changeText} onDelete={deleteText} onEdit={editText} />
@@ -954,9 +1054,9 @@ export function Overlay() {
         />
       )}
 
-      {label && imageRect && !flying && (
+      {label && desktopRect && !flying && (
         <div className="overlay__size" style={{ left: label.x, top: label.y }}>
-          {imageRect.width} × {imageRect.height}
+          {desktopRect.width} × {desktopRect.height}
         </div>
       )}
 

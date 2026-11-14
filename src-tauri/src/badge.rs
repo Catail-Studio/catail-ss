@@ -417,6 +417,16 @@ fn place_sized<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>, height
     } else {
         f64::from(area.position.y) + f64::from(area.size.height) - h - margin
     };
+    // A window of another size (a new "Rozet boyutu"): the badge moves inside it, so until its
+    // page measures it again (on the resize), the whole strip along the corner's edge takes the
+    // mouse rather than where the badge used to be.
+    let resized = window
+        .inner_size()
+        .map(|now| (now.width, now.height) != (w as u32, h as u32))
+        .unwrap_or(true);
+    if resized {
+        *HIT_AREA.lock().unwrap() = None;
+    }
     let _ = window.set_position(PhysicalPosition::new(x as i32, y as i32));
     let _ = window.set_size(PhysicalSize::new(w as u32, h as u32));
 }

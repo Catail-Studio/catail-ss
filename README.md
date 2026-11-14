@@ -1,4 +1,4 @@
-<p align="center"><img src="website/assets/catail-studio.png" alt="Catail Studio" height="64" /></p>
+<p align="center"><img src="src/lib/catail-studio.png" alt="Catail Studio" height="64" /></p>
 
 # Catail
 
@@ -137,7 +137,7 @@ Test listesi: [docs/paste-matrix.md](docs/paste-matrix.md)
 
 ## Web sitesi
 
-Sitenin kaynağı `website/` klasöründe ([ayrıntılar](website/README.md)). Bu klasördeki değişiklikler `main`'e gidince GitHub Pages'e kendiliğinden yayınlanır: https://umutugrasan.github.io/catail/
+Web sitesi bu depodan ayrı tutuluyor: https://umutugrasan.github.io/catail/
 
 ## Lisans
 

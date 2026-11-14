@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  boundsOf,
   chipPosition,
   clampPoint,
+  clampToAreas,
+  fromDesktop,
+  moveRectWithin,
+  toDesktop,
+  withinMonitor,
   containsPoint,
   handleAt,
   handleCursor,
@@ -178,5 +184,43 @@ describe("chipPosition", () => {
   it("stays on screen", () => {
     const p = chipPosition({ x: 100, y: 1040, width: 30, height: 30 }, chip, view);
     expect(p.y + chip.height).toBeLessThanOrEqual(view.height);
+  });
+});
+
+describe("several monitors", () => {
+  // This overlay's monitor at the desktop's origin at 150 %, a 100 % one to its right.
+  const origin = { x: 0, y: 0 };
+  const scale = 1.5;
+  const here = { x: 0, y: 0, width: 2880, height: 1620 };
+  const right = { x: 2880, y: 0, width: 1920, height: 1080 };
+  const areas = [here, right].map((m) => fromDesktop(m, scale, origin));
+
+  it("puts the monitor beside this one in this overlay's px", () => {
+    expect(areas[1]).toEqual({ x: 1920, y: 0, width: 1280, height: 720 });
+  });
+
+  it("lets a point onto the next monitor, but not past an edge with none", () => {
+    expect(clampToAreas({ x: 2500, y: 300 }, areas)).toEqual({ x: 2500, y: 300 });
+    // Right of the right monitor: stops at its edge.
+    expect(clampToAreas({ x: 4000, y: 300 }, areas)).toEqual({ x: 3200, y: 300 });
+    // Below the shorter right monitor: up to its bottom.
+    expect(clampToAreas({ x: 2500, y: 1000 }, areas)).toEqual({ x: 2500, y: 720 });
+    // Left of this one, where there's nothing.
+    expect(clampToAreas({ x: -50, y: 100 }, areas)).toEqual({ x: 0, y: 100 });
+  });
+
+  it("goes to and from the desktop plane", () => {
+    const d = toDesktop({ x: 1900, y: 10, width: 100, height: 20 }, scale, origin);
+    expect(d).toEqual({ x: 2850, y: 15, width: 150, height: 30 });
+    expect(fromDesktop(d, scale, origin)).toEqual({ x: 1900, y: 10, width: 100, height: 20 });
+    expect(withinMonitor(d, here)).toBe(false);
+    expect(withinMonitor({ x: 10, y: 10, width: 20, height: 20 }, here)).toBe(true);
+  });
+
+  it("moves a selection within all the monitors", () => {
+    const bounds = boundsOf(areas);
+    expect(bounds).toEqual({ x: 0, y: 0, width: 3200, height: 1080 });
+    const r = { x: 0, y: 0, width: 200, height: 100 };
+    expect(moveRectWithin(r, { x: 3150, y: -40 }, bounds)).toEqual({ ...r, x: 3000, y: 0 });
   });
 });

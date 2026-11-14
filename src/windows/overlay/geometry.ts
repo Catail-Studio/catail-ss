@@ -1,5 +1,5 @@
 // Pure selection math for the overlay. CSS pixels unless noted.
-import type { ImageRect } from "../../lib/ipc";
+import type { DesktopRect, ImageRect } from "../../lib/ipc";
 
 export interface Point {
   x: number;
@@ -152,3 +152,66 @@ export function chipPosition(code: Rect, chip: Size, view: Size): Point {
   if (below + chip.height <= view.height - GAP) return { x, y: below };
   return { x, y: Math.max(GAP, code.y - gap - chip.height) };
 }
+
+/*
+ * Several monitors. Each overlay works in its own CSS px, with (0, 0) at its monitor's corner
+ * and `scale` physical px to each; the desktop plane is physical px. A selection may run past
+ * its overlay onto the monitors beside it, and only where there is one.
+ */
+
+/** A desktop rectangle in an overlay's px. */
+export const fromDesktop = (d: DesktopRect, scale: number, origin: Point): Rect => ({
+  x: (d.x - origin.x) / scale,
+  y: (d.y - origin.y) / scale,
+  width: d.width / scale,
+  height: d.height / scale,
+});
+
+/** An overlay's selection on the desktop plane; edges rounded on their own, like toImageRect. */
+export function toDesktop(r: Rect, scale: number, origin: Point): DesktopRect {
+  const left = Math.round(origin.x + r.x * scale);
+  const top = Math.round(origin.y + r.y * scale);
+  const right = Math.round(origin.x + (r.x + r.width) * scale);
+  const bottom = Math.round(origin.y + (r.y + r.height) * scale);
+  return { x: left, y: top, width: Math.max(right - left, 0), height: Math.max(bottom - top, 0) };
+}
+
+/** Whether `d` lies wholly on the monitor `m` (both desktop px). */
+export const withinMonitor = (d: DesktopRect, m: DesktopRect) =>
+  d.x >= m.x && d.y >= m.y && d.x + d.width <= m.x + m.width && d.y + d.height <= m.y + m.height;
+
+/**
+ * `p` kept on a monitor: where it is if it's on one, otherwise the nearest point on any of
+ * them. So a selection can be stretched onto a monitor beside this one, and stops at an edge
+ * with no monitor past it.
+ */
+export function clampToAreas(p: Point, areas: Rect[]): Point {
+  let best: Point | null = null;
+  let bestDistance = Infinity;
+  for (const a of areas) {
+    const q = { x: clamp(p.x, a.x, a.x + a.width), y: clamp(p.y, a.y, a.y + a.height) };
+    const distance = Math.hypot(q.x - p.x, q.y - p.y);
+    if (distance === 0) return p;
+    if (distance < bestDistance) {
+      best = q;
+      bestDistance = distance;
+    }
+  }
+  return best ?? p;
+}
+
+/** The smallest rectangle round all of `areas`. */
+export function boundsOf(areas: Rect[]): Rect {
+  const left = Math.min(...areas.map((a) => a.x));
+  const top = Math.min(...areas.map((a) => a.y));
+  const right = Math.max(...areas.map((a) => a.x + a.width));
+  const bottom = Math.max(...areas.map((a) => a.y + a.height));
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+/** Moves `r` so its top-left lands on `origin`, kept inside `bounds`. */
+export const moveRectWithin = (r: Rect, origin: Point, bounds: Rect): Rect => ({
+  ...r,
+  x: clamp(origin.x, bounds.x, bounds.x + bounds.width - r.width),
+  y: clamp(origin.y, bounds.y, bounds.y + bounds.height - r.height),
+});

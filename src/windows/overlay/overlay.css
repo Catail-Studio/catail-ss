@@ -80,13 +80,14 @@ html.pressing .overlay--resize-corner * {
   animation: fade-in var(--normal) var(--ease-out);
 }
 
-/* The huge spread shadow dims everything outside the selection. */
+/* The huge spread shadow dims everything outside the selection: this whole screen even when
+   the selection is over another monitor, a screen or two away. */
 .overlay__selection {
   position: absolute;
   box-sizing: border-box;
   border: 1.5px solid var(--selection);
   border-radius: 2px;
-  box-shadow: 0 0 0 100vmax var(--dim);
+  box-shadow: 0 0 0 30000px var(--dim);
   cursor: var(--paw-move);
 }
 

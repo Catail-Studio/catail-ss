@@ -1,7 +1,7 @@
 // Thin wrappers around Tauri commands and window events.
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { CustomCat } from "./customCat";
-import type { UnlistenFn } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 /** Frame info for this overlay; sizes are physical pixels. */
@@ -17,6 +17,29 @@ export interface OverlayInfo {
   /** Where queued captures fly to (the badge), physical px relative to this monitor. */
   flyX: number | null;
   flyY: number | null;
+  /** This monitor's top-left corner on the desktop, physical px. */
+  originX: number;
+  originY: number;
+  /** Every monitor of the capture, physical desktop px: a selection may run onto them. */
+  monitors: DesktopRect[];
+  /** The pointer was here when the capture started: this overlay shows the mode bar. */
+  active: boolean;
+}
+
+/** A rectangle in physical desktop px, where every monitor sits (may start below zero). */
+export interface DesktopRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The one selection, sent round by the overlay holding it. */
+export interface SharedSelection {
+  owner: string;
+  rect: DesktopRect | null;
+  /** It has drawings: the other overlays leave it alone rather than take it over. */
+  locked: boolean;
 }
 
 export interface QueueItemView {
@@ -178,6 +201,14 @@ export const overlaySession = () => invoke<OverlayInfo | null>("overlay_session"
 export const overlayReady = () => invoke<void>("overlay_ready");
 export const overlaySelectionStarted = () => invoke<void>("overlay_selection_started");
 export const overlayCancel = () => invoke<void>("overlay_cancel");
+/** This overlay's selection changed: every other overlay shows its part of it. */
+export const overlaySelectionChanged = (rect: DesktopRect | null, locked: boolean) =>
+  invoke<void>("overlay_selection_changed", { rect, locked });
+/** A selection over several monitors, without drawings: stitched in Rust and delivered. */
+export const captureDeliverDesktop = (rect: DesktopRect, action: Delivery) =>
+  invoke<void>("capture_deliver_desktop", { rect, action });
+/** A selection over several monitors as PNG bytes, to draw the drawings on. */
+export const captureStitch = (rect: DesktopRect) => invoke<ArrayBuffer>("capture_stitch", { rect });
 /** What to do with a capture: copy it, add it to the queue (starting one if needed), or save it. */
 export type Delivery = "copy" | "enqueue" | "save";
 
@@ -253,6 +284,13 @@ export const hotkeysResume = () => invoke<void>("hotkeys_resume");
 export const updateCheck = () => invoke<UpdateInfo | null>("update_check");
 /** Downloads, installs and restarts the app. */
 export const updateInstall = () => invoke<void>("update_install");
+/** How far along the update's download is, while `updateInstall` runs. */
+export interface UpdateProgress {
+  downloaded: number;
+  total: number | null;
+}
+export const onUpdateProgress = (handler: (progress: UpdateProgress) => void) =>
+  listen<UpdateProgress>("update:progress", (event) => handler(event.payload));
 
 /** Recognizes text in the selection (offline, Windows OCR). */
 export const captureOcr = (rect: ImageRect) => invoke<string>("capture_ocr", { rect });
@@ -296,6 +334,7 @@ export const OverlayEvents = {
   refresh: "overlay:refresh",
   clearSelection: "overlay:clear-selection",
   reset: "overlay:reset",
+  selection: "overlay:selection",
 } as const;
 
 export const BadgeEvents = {

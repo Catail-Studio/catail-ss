@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { catsAround, useWornTheme } from "../../lib/cat";
 import { fatness } from "../../lib/catSeat";
+import { rectToWindowPx } from "../../lib/zoomPx";
 import {
   BadgeCat,
   BoxCat,
@@ -434,43 +435,66 @@ export function Badge() {
     document.getElementById("root")!.dataset.corner = state.corner;
   }, [state.corner]);
 
-  // Only the badge itself takes the mouse; clicks anywhere else in its window go through.
-  // Measured after every change, and again once size transitions (a fatter cat) have settled.
-  const hitArea = useRef("");
-  useLayoutEffect(() => {
-    const report = () => {
-      const content = document.getElementById("root")?.firstElementChild;
-      if (!content) return;
-      // The scratching post stands outside the row, and its pompom can be played with.
-      const parts = [content, document.querySelector(".cat-tree")].filter((el): el is Element => el !== null);
-      const rects = parts.map((el) => el.getBoundingClientRect());
-      const left = Math.min(...rects.map((b) => b.left));
-      const top = Math.min(...rects.map((b) => b.top));
-      const r = {
-        left,
-        top,
-        width: Math.max(...rects.map((b) => b.right)) - left,
-        height: Math.max(...rects.map((b) => b.bottom)) - top,
-      };
-      const pad = 4;
-      const area = [r.left - pad, r.top - pad, r.width + 2 * pad, r.height + 2 * pad].map(Math.round);
-      const key = area.join();
-      if (key === hitArea.current) return;
-      hitArea.current = key;
-      void badgeHitArea(area[0], area[1], area[2], area[3]);
-    };
-    report();
-    const settled = setTimeout(report, 700);
-    return () => clearTimeout(settled);
-  });
-
   // "Rozet boyutu": everything on the badge is drawn that much smaller or bigger. Positions
   // measured on the page or sent by the app are window px; moves set in CSS are zoomed, so
-  // they're divided by this.
+  // they're divided by this. Put on before anything below measures the page.
   const zoom = state.zoom || 1;
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.style.zoom = String(zoom);
   }, [zoom]);
+
+  // Only the badge itself takes the mouse; clicks anywhere else in its window go through.
+  // Measured after every change, whenever the window or the badge changes size (a new size
+  // setting grows the window, and the badge, hugging its corner, moves inside it), and again
+  // once size transitions (a fatter cat) have settled.
+  const hitArea = useRef("");
+  const reportHitArea = useRef(() => {});
+  reportHitArea.current = () => {
+    const content = document.getElementById("root")?.firstElementChild;
+    if (!content) return;
+    // The scratching post stands outside the row, and its pompom can be played with.
+    const parts = [content, document.querySelector(".cat-tree")].filter((el): el is Element => el !== null);
+    const rects = parts.map((el) => el.getBoundingClientRect());
+    const px = rectToWindowPx();
+    const left = Math.min(...rects.map((b) => b.left)) * px;
+    const top = Math.min(...rects.map((b) => b.top)) * px;
+    const right = Math.max(...rects.map((b) => b.right)) * px;
+    const bottom = Math.max(...rects.map((b) => b.bottom)) * px;
+    // A little room round it, as big as the badge is.
+    const pad = 4 * zoom;
+    const area = [left - pad, top - pad, right - left + 2 * pad, bottom - top + 2 * pad].map(Math.round);
+    const key = area.join();
+    if (key === hitArea.current) return;
+    hitArea.current = key;
+    void badgeHitArea(area[0], area[1], area[2], area[3]);
+  };
+  useLayoutEffect(() => {
+    reportHitArea.current();
+    const settled = setTimeout(() => reportHitArea.current(), 700);
+    return () => clearTimeout(settled);
+  });
+  useEffect(() => {
+    const report = () => reportHitArea.current();
+    // The window resized (a new size, another corner): measured once it has, and once more
+    // after the page has settled in it.
+    let later = 0;
+    const onResize = () => {
+      // The app forgot the old area when it resized the window: always send it again.
+      hitArea.current = "";
+      report();
+      window.clearTimeout(later);
+      later = window.setTimeout(report, 250);
+    };
+    window.addEventListener("resize", onResize);
+    const content = document.getElementById("root");
+    const observer = new ResizeObserver(report);
+    if (content) observer.observe(content);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.clearTimeout(later);
+      observer.disconnect();
+    };
+  }, []);
 
   // The box appears where the cat sat. A cat leaps into it: from the panel's bin when the bin
   // was used, otherwise the one from the seat, hopping in where it is.

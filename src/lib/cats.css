@@ -1830,8 +1830,9 @@
   }
 }
 
-/* The plain theme has no cats anywhere, except the other themes' cards in Settings. */
-:root[data-cat="plain"] :not(.cat-card) > .leaping-cat,
+/* The plain theme has no cats anywhere, except the theme and animal cards in Settings (so they
+   keep their size and nothing jumps when you switch to it). */
+:root[data-cat="plain"] :not(.cat-card, .animal-card) > .leaping-cat,
 :root[data-cat="plain"] .cat-face,
 :root[data-cat="plain"] .shell-turtle,
 :root[data-cat="plain"] .cat-slot,

@@ -5,10 +5,11 @@ use std::sync::atomic::Ordering;
 
 use anyhow::{anyhow, Result};
 use image::RgbaImage;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::http::{header, Request, Response, StatusCode};
 use tauri::{AppHandle, Manager, Runtime, UriSchemeContext};
 
+use crate::capture::MonitorShot;
 use crate::i18n::t_with;
 use crate::state::{AppState, CaptureSession};
 use crate::{notify, overlay};
@@ -23,6 +24,66 @@ pub struct SelectionRect {
     pub y: u32,
     pub width: u32,
     pub height: u32,
+}
+
+/// A selection in physical desktop pixels: the plane every monitor sits in, as Windows lays
+/// them out (so it can start left of or above the main one). One selection may cover several.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub struct DesktopRect {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// Cuts `rect` out of every monitor it covers and lays the pieces into one picture, where the
+/// desktop has them. Anything over no monitor stays transparent. `None` when nothing is covered.
+pub fn stitch(shots: &[MonitorShot], rect: DesktopRect) -> Option<RgbaImage> {
+    if rect.width == 0 || rect.height == 0 {
+        return None;
+    }
+    let mut out = RgbaImage::new(rect.width, rect.height);
+    let (right, bottom) = (
+        i64::from(rect.x) + i64::from(rect.width),
+        i64::from(rect.y) + i64::from(rect.height),
+    );
+    let mut covered = false;
+    for shot in shots {
+        let (w, h) = shot.image.dimensions();
+        let left = i64::from(rect.x).max(i64::from(shot.x));
+        let top = i64::from(rect.y).max(i64::from(shot.y));
+        let piece_right = right.min(i64::from(shot.x) + i64::from(w));
+        let piece_bottom = bottom.min(i64::from(shot.y) + i64::from(h));
+        if piece_right <= left || piece_bottom <= top {
+            continue;
+        }
+        let piece = image::imageops::crop_imm(
+            &shot.image,
+            (left - i64::from(shot.x)) as u32,
+            (top - i64::from(shot.y)) as u32,
+            (piece_right - left) as u32,
+            (piece_bottom - top) as u32,
+        )
+        .to_image();
+        image::imageops::replace(
+            &mut out,
+            &piece,
+            left - i64::from(rect.x),
+            top - i64::from(rect.y),
+        );
+        covered = true;
+    }
+    covered.then_some(out)
+}
+
+/// The current session's picture of `rect`, across monitors.
+pub fn stitch_selection(state: &AppState, rect: DesktopRect) -> Result<RgbaImage> {
+    let session = state.session.lock().unwrap();
+    let shots = &session
+        .as_ref()
+        .ok_or_else(|| anyhow!("no capture session"))?
+        .shots;
+    stitch(shots, rect).ok_or_else(|| anyhow!("empty selection"))
 }
 
 /// Hotkey entry point. Runs on a worker thread.
@@ -119,6 +180,70 @@ pub fn serve<R: Runtime>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn shot(x: i32, y: i32, w: u32, h: u32, value: u8) -> MonitorShot {
+        MonitorShot {
+            x,
+            y,
+            image: RgbaImage::from_pixel(w, h, image::Rgba([value, value, value, 255])),
+            png: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn stitches_a_selection_across_two_monitors() {
+        // The main monitor at 0,0 and another, taller one to its left, a little higher.
+        let shots = [shot(0, 0, 100, 50, 10), shot(-80, -20, 80, 90, 200)];
+        let rect = DesktopRect {
+            x: -30,
+            y: 10,
+            width: 60,
+            height: 20,
+        };
+        let out = stitch(&shots, rect).unwrap();
+        assert_eq!(out.dimensions(), (60, 20));
+        assert_eq!(out.get_pixel(0, 0)[0], 200); // left monitor
+        assert_eq!(out.get_pixel(29, 19)[0], 200);
+        assert_eq!(out.get_pixel(30, 0)[0], 10); // main monitor
+        assert_eq!(out.get_pixel(59, 19)[0], 10);
+    }
+
+    #[test]
+    fn leaves_gaps_between_monitors_transparent() {
+        let shots = [shot(0, 0, 10, 10, 50)];
+        let out = stitch(
+            &shots,
+            DesktopRect {
+                x: 5,
+                y: 5,
+                width: 10,
+                height: 10,
+            },
+        )
+        .unwrap();
+        assert_eq!(out.get_pixel(0, 0)[3], 255);
+        assert_eq!(out.get_pixel(9, 9)[3], 0);
+        assert!(stitch(
+            &shots,
+            DesktopRect {
+                x: 50,
+                y: 50,
+                width: 5,
+                height: 5
+            }
+        )
+        .is_none());
+        assert!(stitch(
+            &shots,
+            DesktopRect {
+                x: 0,
+                y: 0,
+                width: 0,
+                height: 5
+            }
+        )
+        .is_none());
+    }
     use image::Rgba;
 
     fn rect(x: u32, y: u32, width: u32, height: u32) -> SelectionRect {

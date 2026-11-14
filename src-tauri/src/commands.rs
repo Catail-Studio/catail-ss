@@ -8,7 +8,7 @@ use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::badge::{self, BadgeState};
-use crate::capture::region::{self, SelectionRect};
+use crate::capture::region::{self, DesktopRect, SelectionRect};
 use crate::i18n::{t, t_with};
 use crate::panel::{self, ItemView};
 use crate::queue::item::QueueItemKind;
@@ -33,6 +33,13 @@ pub struct OverlayInfo {
     /// Where queued captures fly to (the badge), in physical px relative to this monitor.
     fly_x: Option<f64>,
     fly_y: Option<f64>,
+    /// This monitor's top-left corner on the desktop, in physical px.
+    origin_x: i32,
+    origin_y: i32,
+    /// Every monitor of the capture, in physical desktop px: a selection may run onto them.
+    monitors: Vec<DesktopRect>,
+    /// The pointer was on this monitor when the capture started: its overlay shows the mode bar.
+    active: bool,
 }
 
 #[tauri::command]
@@ -46,6 +53,19 @@ pub fn overlay_session(
     let session = session.as_ref()?;
     let shot = session.shots.get(index)?;
     let fly = badge::fly_target(&app);
+    let monitors = session
+        .shots
+        .iter()
+        .map(|s| DesktopRect {
+            x: s.x,
+            y: s.y,
+            width: s.image.width(),
+            height: s.image.height(),
+        })
+        .collect();
+    let cursor = app.cursor_position().ok();
+    // With the pointer between monitors (or unknown), the first one leads.
+    let pointed = cursor.and_then(|c| session.shots.iter().position(|s| s.contains(c.x, c.y)));
     Some(OverlayInfo {
         session: session.id,
         index,
@@ -55,7 +75,61 @@ pub fn overlay_session(
         text_mode: state.text_mode.load(std::sync::atomic::Ordering::SeqCst),
         fly_x: fly.map(|(x, _)| x - f64::from(shot.x)),
         fly_y: fly.map(|(_, y)| y - f64::from(shot.y)),
+        origin_x: shot.x,
+        origin_y: shot.y,
+        monitors,
+        active: pointed.unwrap_or(0) == index,
     })
+}
+
+/// What the overlay holding the selection tells the others, so every monitor shows the one
+/// selection: its part on each screen.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SharedSelection {
+    /// The overlay the selection belongs to (where it was drawn).
+    owner: String,
+    rect: Option<DesktopRect>,
+    /// It has drawings: the others leave it alone rather than take it over.
+    locked: bool,
+}
+
+/// The selection moved, changed size, was started or dropped, on the `window` that holds it.
+#[tauri::command]
+pub fn overlay_selection_changed(
+    app: AppHandle,
+    window: WebviewWindow,
+    rect: Option<DesktopRect>,
+    locked: bool,
+) {
+    let shared = SharedSelection {
+        owner: window.label().to_owned(),
+        rect,
+        locked,
+    };
+    overlay::share_selection(&app, window.label(), &shared);
+}
+
+/// A selection over more than one monitor, without drawings: stitched and delivered.
+#[tauri::command]
+pub async fn capture_deliver_desktop(
+    app: AppHandle,
+    rect: DesktopRect,
+    action: Delivery,
+) -> Result<(), String> {
+    let image = region::stitch_selection(&app.state::<AppState>(), rect);
+    overlay::close_all(&app);
+    deliver(&app, image.map_err(|e| format!("{e:#}"))?, action)
+}
+
+/// A selection over more than one monitor, as a PNG: the overlay draws its drawings on it and
+/// delivers that (`capture_deliver_annotated`).
+#[tauri::command]
+pub fn capture_stitch(app: AppHandle, rect: DesktopRect) -> Result<tauri::ipc::Response, String> {
+    let image =
+        region::stitch_selection(&app.state::<AppState>(), rect).map_err(|e| format!("{e:#}"))?;
+    let png = crate::capture::encode_png(&image).map_err(|e| format!("{e:#}"))?;
+    Ok(tauri::ipc::Response::new(png))
 }
 
 #[tauri::command]

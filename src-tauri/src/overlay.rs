@@ -23,6 +23,9 @@ pub const EVENT_REFRESH: &str = "overlay:refresh";
 pub const EVENT_CLEAR_SELECTION: &str = "overlay:clear-selection";
 /// Tells an overlay it was hidden and should release its frame.
 pub const EVENT_RESET: &str = "overlay:reset";
+/// The one selection, as the overlay holding it last left it: every other overlay shows its
+/// part of it.
+pub const EVENT_SELECTION: &str = "overlay:selection";
 
 pub fn label(index: usize) -> String {
     format!("{LABEL_PREFIX}{index}")
@@ -115,6 +118,19 @@ pub fn clear_other_selections<R: Runtime>(app: &AppHandle<R>, origin: &str) {
     for window in overlay_windows(app) {
         if window.label() != origin {
             let _ = app.emit_to(window.label(), EVENT_CLEAR_SELECTION, ());
+        }
+    }
+}
+
+/// Sends the overlay `origin`'s selection to every other overlay.
+pub fn share_selection<R: Runtime, S: serde::Serialize + Clone>(
+    app: &AppHandle<R>,
+    origin: &str,
+    selection: &S,
+) {
+    for window in overlay_windows(app) {
+        if window.label() != origin {
+            let _ = app.emit_to(window.label(), EVENT_SELECTION, selection.clone());
         }
     }
 }

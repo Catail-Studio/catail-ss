@@ -920,6 +920,8 @@ async function birdie(s: Scene) {
     guest.face(cat.right ? 1 : -1);
     return !riding;
   });
+  // Cut short on the way, this is never awaited: the walk's own `Cut` ends the scene.
+  ride.catch(() => undefined);
   const end = home + far * (HOP_SIDEWAYS + Math.min(s.room(far), random(140, 260)));
   await s.go(cat, end, CAPYBARA_PACE);
   cat.show({ pose: "lounge" });

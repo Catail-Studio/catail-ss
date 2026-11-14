@@ -83,6 +83,43 @@ fn ensure_window<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>> {
     Ok(window)
 }
 
+/// Puts the strip back on top of every other window, without taking focus or moving it.
+///
+/// It is created topmost, but that doesn't hold: it spends most of its life parked far off the
+/// screen, and it was found back down among ordinary windows with its `WS_EX_TOPMOST` style
+/// still set, so the cat played behind every open app (the badge, shown and hidden in place,
+/// keeps its spot). Setting the style again changes nothing; only `SetWindowPos` with
+/// `HWND_TOPMOST` puts it back in the topmost band, so that is done each time it comes out.
+#[cfg(windows)]
+fn raise<R: Runtime>(window: &WebviewWindow<R>) {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
+    };
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    // Tauri hands out its own `windows` crate's handle; this crate's is the same pointer.
+    let hwnd = HWND(hwnd.0 as _);
+    // SAFETY: a plain Win32 call on our own window; it fails harmlessly if the window is gone.
+    unsafe {
+        let _ = SetWindowPos(
+            hwnd,
+            Some(HWND_TOPMOST),
+            0,
+            0,
+            0,
+            0,
+            SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE,
+        );
+    }
+}
+
+#[cfg(not(windows))]
+fn raise<R: Runtime>(window: &WebviewWindow<R>) {
+    let _ = window.set_always_on_top(true);
+}
+
 fn park<R: Runtime>(window: &WebviewWindow<R>) {
     let _ = window.set_position(tauri::LogicalPosition::new(PARKED, PARKED));
 }
@@ -132,6 +169,8 @@ pub fn start<R: Runtime>(
     };
     let _ = app.emit_to(LABEL, EVENT_START, start);
     std::thread::sleep(READY);
+    // Still off the screen: on top before anyone can see it.
+    raise(&window);
     let _ = window.set_position(PhysicalPosition::new(ax as i32, (bottom - h) as i32));
     OUT_FOR_A_WALK.store(true, Ordering::Relaxed);
     true
