@@ -6,7 +6,8 @@
     "tooltip": "Catail — PrintScreen でスクリーンショット",
     "capture": "スクリーンショットを撮る",
     "settings": "設定",
-    "quit": "終了"
+    "quit": "終了",
+    "convert": "Catail Convert を開く"
   },
   "overlay": {
     "hint": "ドラッグして範囲を選択 · Esc: キャンセル",
@@ -66,7 +67,9 @@
     "qr_copy_text": "QR コードの文字をコピー",
     "qr_copied": "コピーしました ✓",
     "qr_text": "QR コード",
-    "tool_crop": "トリミング"
+    "tool_crop": "トリミング",
+    "convert": "変換",
+    "convert_title": "Catail Convert で変換"
   },
   "save": {
     "dialog_title": "スクリーンショットを保存",
@@ -229,7 +232,9 @@
     "zoom": "拡大して編集",
     "title_short": "キュー",
     "drop_hint": "ドロップしてキューに追加",
-    "pdf_preview": "PDF をプレビュー"
+    "pdf_preview": "PDF をプレビュー",
+    "convert": "Catail Convert で変換",
+    "convert_selected": "選択したものを Catail Convert で変換"
   },
   "ocr": {
     "no_language": "Windows に文字認識用の言語パックがありません。設定 → 時刻と言語 → 言語 で追加してください。",
@@ -269,5 +274,10 @@
     "pdf_password": "この PDF はパスワードで保護されているため表示できません。",
     "pdf_zoom_in": "拡大 (+)",
     "pdf_zoom_out": "縮小 (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert が見つかりません",
+    "capture_name": "スクリーンショット",
+    "text_name": "テキスト"
   }
 }

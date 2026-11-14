@@ -6,7 +6,8 @@
     "tooltip": "Catail — schermafbeelding met PrtSc",
     "capture": "Schermafbeelding maken",
     "settings": "Instellingen",
-    "quit": "Afsluiten"
+    "quit": "Afsluiten",
+    "convert": "Catail Convert openen"
   },
   "overlay": {
     "hint": "Sleep om een gebied te kiezen · Esc: annuleren",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Tekst van de QR-code kopiëren",
     "qr_copied": "Gekopieerd ✓",
     "qr_text": "QR-code",
-    "tool_crop": "Bijsnijden"
+    "tool_crop": "Bijsnijden",
+    "convert": "Omzetten",
+    "convert_title": "Omzetten met Catail Convert"
   },
   "save": {
     "dialog_title": "Schermafbeelding opslaan",
@@ -229,7 +232,9 @@
     "zoom": "Vergroten en bewerken",
     "title_short": "Wachtrij",
     "drop_hint": "Laat los om toe te voegen",
-    "pdf_preview": "PDF-voorbeeld"
+    "pdf_preview": "PDF-voorbeeld",
+    "convert": "Omzetten met Catail Convert",
+    "convert_selected": "Selectie omzetten met Catail Convert"
   },
   "ocr": {
     "no_language": "Windows heeft geen taalpakket voor tekstherkenning. Voeg er een toe via Instellingen → Tijd en taal → Taal.",
@@ -269,5 +274,10 @@
     "pdf_password": "Deze PDF is beveiligd met een wachtwoord en kan niet worden getoond.",
     "pdf_zoom_in": "Inzoomen (+)",
     "pdf_zoom_out": "Uitzoomen (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert niet gevonden",
+    "capture_name": "Schermafbeelding",
+    "text_name": "Tekst"
   }
 }

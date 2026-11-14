@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod badge;
+mod bridge;
 mod capture;
 mod clipboard;
 mod commands;
@@ -22,6 +23,7 @@ mod settings;
 mod shell_menu;
 mod state;
 mod stroll;
+mod studio;
 mod translate;
 mod tray;
 mod updater;
@@ -44,6 +46,9 @@ fn main() {
         .map(|arg| arg.to_string_lossy().into_owned())
         .collect();
     let files_at_start = shell_menu::paths_to_enqueue(&args);
+
+    // Held while Catail runs: Catail Convert reads it as "Catail is up" (bridge.rs).
+    let _studio_lock = bridge::hold_lock(bridge::CATAIL);
 
     tauri::Builder::default()
         // Must be registered first so a second launch exits before doing anything else.
@@ -94,6 +99,8 @@ fn main() {
             commands::panel_paste,
             commands::panel_paste_items,
             commands::queue_items,
+            commands::convert_installed,
+            commands::queue_convert,
             commands::queue_remove,
             commands::queue_reorder,
             commands::queue_edit_image,
@@ -148,6 +155,7 @@ fn main() {
                 clipboard::watcher::start(move || queue::on_clipboard_changed(&handle));
             }
             updater::check_in_background(app.handle());
+            studio::announce(app.handle());
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 overlay::prewarm(&handle);

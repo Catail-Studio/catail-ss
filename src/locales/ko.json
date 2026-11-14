@@ -6,7 +6,8 @@
     "tooltip": "Catail — PrintScreen으로 스크린샷",
     "capture": "스크린샷 찍기",
     "settings": "설정",
-    "quit": "종료"
+    "quit": "종료",
+    "convert": "Catail Convert 열기"
   },
   "overlay": {
     "hint": "드래그해서 영역 선택 · Esc: 취소",
@@ -66,7 +67,9 @@
     "qr_copy_text": "QR 코드의 텍스트 복사",
     "qr_copied": "복사됨 ✓",
     "qr_text": "QR 코드",
-    "tool_crop": "자르기"
+    "tool_crop": "자르기",
+    "convert": "변환",
+    "convert_title": "Catail Convert로 변환"
   },
   "save": {
     "dialog_title": "스크린샷 저장",
@@ -229,7 +232,9 @@
     "zoom": "확대 및 편집",
     "title_short": "대기열",
     "drop_hint": "놓아서 대기열에 추가",
-    "pdf_preview": "PDF 미리 보기"
+    "pdf_preview": "PDF 미리 보기",
+    "convert": "Catail Convert로 변환",
+    "convert_selected": "선택한 항목을 Catail Convert로 변환"
   },
   "ocr": {
     "no_language": "Windows에 글자 인식용 언어 팩이 없습니다. 설정 → 시간 및 언어 → 언어에서 추가하세요.",
@@ -269,5 +274,10 @@
     "pdf_password": "이 PDF는 암호로 보호되어 표시할 수 없습니다.",
     "pdf_zoom_in": "확대 (+)",
     "pdf_zoom_out": "축소 (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert를 찾을 수 없음",
+    "capture_name": "스크린샷",
+    "text_name": "텍스트"
   }
 }

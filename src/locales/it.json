@@ -6,7 +6,8 @@
     "tooltip": "Catail — screenshot con Stamp",
     "capture": "Fai uno screenshot",
     "settings": "Impostazioni",
-    "quit": "Esci"
+    "quit": "Esci",
+    "convert": "Apri Catail Convert"
   },
   "overlay": {
     "hint": "Trascina per selezionare un’area · Esc: annulla",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Copia il testo del codice QR",
     "qr_copied": "Copiato ✓",
     "qr_text": "Codice QR",
-    "tool_crop": "Ritaglia"
+    "tool_crop": "Ritaglia",
+    "convert": "Converti",
+    "convert_title": "Converti con Catail Convert"
   },
   "save": {
     "dialog_title": "Salva screenshot",
@@ -229,7 +232,9 @@
     "zoom": "Ingrandisci e modifica",
     "title_short": "Coda",
     "drop_hint": "Rilascia per aggiungere alla coda",
-    "pdf_preview": "Anteprima del PDF"
+    "pdf_preview": "Anteprima del PDF",
+    "convert": "Converti con Catail Convert",
+    "convert_selected": "Converti la selezione con Catail Convert"
   },
   "ocr": {
     "no_language": "Windows non ha un pacchetto lingua per il riconoscimento del testo. Aggiungilo in Impostazioni → Data/ora e lingua → Lingua.",
@@ -269,5 +274,10 @@
     "pdf_password": "Questo PDF è protetto da password e non può essere mostrato.",
     "pdf_zoom_in": "Ingrandisci (+)",
     "pdf_zoom_out": "Riduci (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert non trovato",
+    "capture_name": "Screenshot",
+    "text_name": "Testo"
   }
 }

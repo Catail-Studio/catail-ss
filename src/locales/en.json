@@ -6,7 +6,8 @@
     "tooltip": "Catail — take a screenshot with PrintScreen",
     "capture": "Take a screenshot",
     "settings": "Settings",
-    "quit": "Quit"
+    "quit": "Quit",
+    "convert": "Open Catail Convert"
   },
   "overlay": {
     "hint": "Drag to select an area · Esc: cancel",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Copy the text in the QR code",
     "qr_copied": "Copied ✓",
     "qr_text": "QR code",
-    "tool_crop": "Crop"
+    "tool_crop": "Crop",
+    "convert": "Convert",
+    "convert_title": "Convert with Catail Convert"
   },
   "save": {
     "dialog_title": "Save screenshot",
@@ -229,7 +232,9 @@
     "zoom": "Enlarge and edit",
     "title_short": "Queue",
     "drop_hint": "Drop to add to the queue",
-    "pdf_preview": "Preview the PDF"
+    "pdf_preview": "Preview the PDF",
+    "convert": "Convert with Catail Convert",
+    "convert_selected": "Convert the selected with Catail Convert"
   },
   "ocr": {
     "no_language": "Windows has no language pack for text recognition. Add one under Settings → Time & language → Language.",
@@ -269,5 +274,10 @@
     "pdf_password": "This PDF is password-protected and can't be shown.",
     "pdf_zoom_in": "Zoom in (+)",
     "pdf_zoom_out": "Zoom out (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert wasn't found",
+    "capture_name": "Screenshot",
+    "text_name": "Text"
   }
 }

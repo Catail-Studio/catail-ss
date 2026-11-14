@@ -40,6 +40,8 @@ pub struct OverlayInfo {
     monitors: Vec<DesktopRect>,
     /// The pointer was on this monitor when the capture started: its overlay shows the mode bar.
     active: bool,
+    /// Catail Convert is installed: the toolbar offers "Dönüştür".
+    convert_installed: bool,
 }
 
 #[tauri::command]
@@ -73,6 +75,7 @@ pub fn overlay_session(
         height: shot.image.height(),
         queue_count: state.queue.lock().unwrap().len(),
         text_mode: state.text_mode.load(std::sync::atomic::Ordering::SeqCst),
+        convert_installed: crate::studio::convert_installed(),
         fly_x: fly.map(|(x, _)| x - f64::from(shot.x)),
         fly_y: fly.map(|(_, y)| y - f64::from(shot.y)),
         origin_x: shot.x,
@@ -155,6 +158,8 @@ pub enum Delivery {
     /// Starts the queue, or appends to the existing one.
     Enqueue,
     Save,
+    /// Opens the capture in Catail Convert's cat box.
+    Convert,
 }
 
 impl Delivery {
@@ -163,6 +168,7 @@ impl Delivery {
             "copy" => Some(Self::Copy),
             "enqueue" => Some(Self::Enqueue),
             "save" => Some(Self::Save),
+            "convert" => Some(Self::Convert),
             _ => None,
         }
     }
@@ -215,6 +221,8 @@ fn deliver(app: &AppHandle, image: image::RgbaImage, action: Delivery) -> Result
             save_with_dialog(app, image);
             Ok(())
         }
+        Delivery::Convert => crate::studio::send_capture(&image)
+            .inspect_err(|e| notify::show(app, &t("app.name"), e)),
     }
 }
 
@@ -251,6 +259,19 @@ pub async fn panel_paste(app: AppHandle) {
 pub async fn panel_paste_items(app: AppHandle, ids: Vec<uuid::Uuid>) {
     panel::hide(&app);
     paste::run_items(&app, Some(&ids));
+}
+
+/// Whether Catail Convert is on this computer (the panel's "Dönüştür").
+#[tauri::command]
+pub fn convert_installed() -> bool {
+    crate::studio::convert_installed()
+}
+
+/// Panel "Dönüştür": these items (all when `ids` is empty) open in Catail Convert.
+#[tauri::command]
+pub async fn queue_convert(app: AppHandle, ids: Option<Vec<uuid::Uuid>>) -> Result<(), String> {
+    panel::hide(&app);
+    crate::studio::send_queue(&app, ids.as_deref())
 }
 
 #[tauri::command]
@@ -367,6 +388,8 @@ pub async fn settings_save(app: AppHandle, settings: Settings) -> Result<(), Str
     let layout_changed = next.panel_layout != previous.panel_layout;
     let size_changed = next.badge_size != previous.badge_size;
     *app.state::<AppState>().settings.lock().unwrap() = next.clone();
+    // Catail Convert follows the cat and the language.
+    crate::studio::announce(&app);
     if language_changed {
         let before = crate::i18n::current();
         if crate::i18n::set_language(next.language.as_deref()) != before {

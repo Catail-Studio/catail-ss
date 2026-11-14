@@ -6,7 +6,8 @@
     "tooltip": "Catail — لقطة شاشة بمفتاح PrintScreen",
     "capture": "التقاط الشاشة",
     "settings": "الإعدادات",
-    "quit": "خروج"
+    "quit": "خروج",
+    "convert": "فتح Catail Convert"
   },
   "overlay": {
     "hint": "اسحب لتحديد منطقة · Esc: إلغاء",
@@ -66,7 +67,9 @@
     "qr_copy_text": "نسخ نص رمز QR",
     "qr_copied": "تم النسخ ✓",
     "qr_text": "رمز QR",
-    "tool_crop": "قص"
+    "tool_crop": "قص",
+    "convert": "تحويل",
+    "convert_title": "التحويل باستخدام Catail Convert"
   },
   "save": {
     "dialog_title": "حفظ لقطة الشاشة",
@@ -229,7 +232,9 @@
     "zoom": "تكبير وتعديل",
     "title_short": "القائمة",
     "drop_hint": "أفلت للإضافة إلى قائمة الانتظار",
-    "pdf_preview": "معاينة ملف PDF"
+    "pdf_preview": "معاينة ملف PDF",
+    "convert": "التحويل باستخدام Catail Convert",
+    "convert_selected": "تحويل المحدد باستخدام Catail Convert"
   },
   "ocr": {
     "no_language": "لا توجد في Windows حزمة لغة للتعرّف على النص. أضف واحدة من الإعدادات ← الوقت واللغة ← اللغة.",
@@ -269,5 +274,10 @@
     "pdf_password": "ملف PDF هذا محمي بكلمة مرور ولا يمكن عرضه.",
     "pdf_zoom_in": "تكبير (+)",
     "pdf_zoom_out": "تصغير (-)"
+  },
+  "convert": {
+    "missing": "لم يتم العثور على Catail Convert",
+    "capture_name": "لقطة شاشة",
+    "text_name": "نص"
   }
 }

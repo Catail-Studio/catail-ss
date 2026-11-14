@@ -6,7 +6,8 @@
     "tooltip": "Catail — Screenshot mit der Druck-Taste",
     "capture": "Screenshot aufnehmen",
     "settings": "Einstellungen",
-    "quit": "Beenden"
+    "quit": "Beenden",
+    "convert": "Catail Convert öffnen"
   },
   "overlay": {
     "hint": "Zum Auswählen ziehen · Esc: abbrechen",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Text des QR-Codes kopieren",
     "qr_copied": "Kopiert ✓",
     "qr_text": "QR-Code",
-    "tool_crop": "Zuschneiden"
+    "tool_crop": "Zuschneiden",
+    "convert": "Umwandeln",
+    "convert_title": "Mit Catail Convert umwandeln"
   },
   "save": {
     "dialog_title": "Screenshot speichern",
@@ -229,7 +232,9 @@
     "zoom": "Vergrößern und bearbeiten",
     "title_short": "Warteschlange",
     "drop_hint": "Zum Hinzufügen ablegen",
-    "pdf_preview": "PDF-Vorschau"
+    "pdf_preview": "PDF-Vorschau",
+    "convert": "Mit Catail Convert umwandeln",
+    "convert_selected": "Auswahl mit Catail Convert umwandeln"
   },
   "ocr": {
     "no_language": "Windows hat kein Sprachpaket für die Texterkennung. Füge eines unter Einstellungen → Zeit und Sprache → Sprache hinzu.",
@@ -269,5 +274,10 @@
     "pdf_password": "Dieses PDF ist passwortgeschützt und kann nicht angezeigt werden.",
     "pdf_zoom_in": "Vergrößern (+)",
     "pdf_zoom_out": "Verkleinern (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert wurde nicht gefunden",
+    "capture_name": "Bildschirmfoto",
+    "text_name": "Text"
   }
 }

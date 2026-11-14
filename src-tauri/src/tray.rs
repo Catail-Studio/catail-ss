@@ -18,6 +18,7 @@ const LIGHT_WINDOW: Color = Color(255, 250, 250, 255);
 const MENU_CAPTURE: &str = "capture";
 const MENU_SETTINGS: &str = "settings";
 const MENU_QUIT: &str = "quit";
+const MENU_CONVERT: &str = "convert";
 
 const TRAY_ID: &str = "main";
 
@@ -32,6 +33,11 @@ fn menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let settings = MenuItem::with_id(app, MENU_SETTINGS, t("tray.settings"), true, None::<&str>)?;
     let quit = MenuItem::with_id(app, MENU_QUIT, t("tray.quit"), true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
+    // Catail Convert, when it is on this computer.
+    if crate::studio::convert_installed() {
+        let convert = MenuItem::with_id(app, MENU_CONVERT, t("tray.convert"), true, None::<&str>)?;
+        return Menu::with_items(app, &[&capture, &convert, &settings, &separator, &quit]);
+    }
     Menu::with_items(app, &[&capture, &settings, &separator, &quit])
 }
 
@@ -84,6 +90,11 @@ fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
         }
         MENU_SETTINGS => {
             std::thread::spawn(move || open_settings(&app));
+        }
+        MENU_CONVERT => {
+            if let Err(e) = crate::studio::open_convert() {
+                crate::notify::show(&app, &t("app.name"), &e);
+            }
         }
         MENU_QUIT => app.exit(0),
         _ => {}

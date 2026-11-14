@@ -240,6 +240,7 @@ pub fn changed<R: Runtime>(app: &AppHandle<R>) {
     hotkeys::set_queue_paste(app, has_items && !preview::is_open());
     badge::refresh(app);
     panel::refresh(app);
+    crate::studio::announce(app);
 }
 
 /// Clipboard watcher callback: the user copied something in text mode.

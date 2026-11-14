@@ -6,7 +6,8 @@
     "tooltip": "Catail — captura de tela com PrtScn",
     "capture": "Capturar a tela",
     "settings": "Configurações",
-    "quit": "Sair"
+    "quit": "Sair",
+    "convert": "Abrir o Catail Convert"
   },
   "overlay": {
     "hint": "Arraste para selecionar uma área · Esc: cancelar",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Copiar o texto do QR code",
     "qr_copied": "Copiado ✓",
     "qr_text": "QR code",
-    "tool_crop": "Cortar"
+    "tool_crop": "Cortar",
+    "convert": "Converter",
+    "convert_title": "Converter com o Catail Convert"
   },
   "save": {
     "dialog_title": "Salvar captura de tela",
@@ -229,7 +232,9 @@
     "zoom": "Ampliar e editar",
     "title_short": "Fila",
     "drop_hint": "Larga para adicionar à fila",
-    "pdf_preview": "Pré-visualizar o PDF"
+    "pdf_preview": "Pré-visualizar o PDF",
+    "convert": "Converter com o Catail Convert",
+    "convert_selected": "Converter a seleção com o Catail Convert"
   },
   "ocr": {
     "no_language": "O Windows não tem pacote de idioma para reconhecimento de texto. Adicione um em Configurações → Hora e idioma → Idioma.",
@@ -269,5 +274,10 @@
     "pdf_password": "Este PDF está protegido por palavra-passe e não pode ser mostrado.",
     "pdf_zoom_in": "Ampliar (+)",
     "pdf_zoom_out": "Reduzir (-)"
+  },
+  "convert": {
+    "missing": "O Catail Convert não foi encontrado",
+    "capture_name": "Captura de tela",
+    "text_name": "Texto"
   }
 }

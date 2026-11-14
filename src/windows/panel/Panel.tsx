@@ -12,7 +12,9 @@ import {
   panelPaste,
   panelPasteItems,
   previewOpen,
+  convertInstalled,
   queueClear,
+  queueConvert,
   queueExport,
   queueImageUrl,
   queueItems,
@@ -22,7 +24,7 @@ import {
   type PanelOpened,
   type QueueItemView,
 } from "../../lib/ipc";
-import { CheckIcon, CloseIcon, FileIcon, PasteIcon, SaveIcon, TrashIcon, ZoomIcon } from "../overlay/icons";
+import { CheckIcon, CloseIcon, ConvertIcon, FileIcon, PasteIcon, SaveIcon, TrashIcon, ZoomIcon } from "../overlay/icons";
 import { extensionLabel, formatSize, isPdf } from "./fileCard";
 import { LIST } from "./layout";
 import { cellAt, cellPosition, moveItem, type Grid } from "./reorder";
@@ -132,6 +134,13 @@ export function Panel() {
   const [dropHover, setDropHover] = useState(false);
   // Tiles picked with a click, for "Seçilenleri yapıştır".
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Catail Convert on this computer: the footer offers "Dönüştür".
+  const [canConvert, setCanConvert] = useState(false);
+  useEffect(() => {
+    void convertInstalled()
+      .then(setCanConvert)
+      .catch(() => setCanConvert(false));
+  }, [items.length]);
   // A card that just joined while the panel is open, and the cat's verdict on it.
   const [sniffing, setSniffing] = useState<{ id: string; mood: "like" | "sneeze" } | null>(null);
   // What the panel has already shown, so only newcomers get sniffed.
@@ -446,6 +455,16 @@ export function Panel() {
               <PasteIcon />
               {t("panel.paste_selected_short")}
             </button>
+            {canConvert && (
+              <button
+                type="button"
+                className="panel__icon-button"
+                title={t("panel.convert_selected")}
+                onClick={() => void queueConvert(items.filter((item) => selected.has(item.id)).map((item) => item.id))}
+              >
+                <ConvertIcon size={16} />
+              </button>
+            )}
           </div>
         )}
 
@@ -469,6 +488,16 @@ export function Panel() {
               <PasteIcon />
               <span className="panel__picked-number">{selected.size}</span>
             </button>
+            {canConvert && (
+              <button
+                type="button"
+                className="panel__button"
+                data-label={t("panel.convert_selected")}
+                onClick={() => void queueConvert(items.filter((item) => selected.has(item.id)).map((item) => item.id))}
+              >
+                <ConvertIcon size={17} />
+              </button>
+            )}
           </footer>
         ) : (
           <footer key="all" className="panel__footer">
@@ -502,6 +531,17 @@ export function Panel() {
                 </div>
               )}
             </div>
+
+            {canConvert && (
+              <button
+                type="button"
+                className="panel__button"
+                data-label={t("panel.convert")}
+                onClick={() => void queueConvert()}
+              >
+                <ConvertIcon size={LIST ? 15 : 17} />
+              </button>
+            )}
 
             <button
               type="button"

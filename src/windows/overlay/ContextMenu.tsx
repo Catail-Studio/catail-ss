@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { t } from "../../lib/i18n";
 import type { Delivery } from "../../lib/ipc";
 import type { Point } from "./geometry";
-import { CloseIcon, CopyIcon, QueueAddIcon, SaveIcon, SelectAllIcon } from "./icons";
+import { CloseIcon, ConvertIcon, CopyIcon, QueueAddIcon, SaveIcon, SelectAllIcon } from "./icons";
 
 const EDGE = 6;
 
@@ -13,13 +13,15 @@ interface Props {
   hasSelection: boolean;
   hasQueue: boolean;
   primary: Delivery;
+  /** Catail Convert is installed. */
+  canConvert: boolean;
   onClose: () => void;
   onDeliver: (action: Delivery) => void;
   onSelectAll: () => void;
   onCancel: () => void;
 }
 
-export function ContextMenu({ at, hasSelection, hasQueue, primary, onClose, onDeliver, onSelectAll, onCancel }: Props) {
+export function ContextMenu({ at, hasSelection, hasQueue, primary, canConvert, onClose, onDeliver, onSelectAll, onCancel }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   // Opens down-right of the pointer, flipped where it would run off the screen.
   const [place, setPlace] = useState<{ x: number; y: number; origin: string } | null>(null);
@@ -73,6 +75,7 @@ export function ContextMenu({ at, hasSelection, hasQueue, primary, onClose, onDe
         hint: primary === "enqueue" ? "Enter" : undefined,
         disabled: none,
       })}
+      {canConvert && item(<ConvertIcon />, t("overlay.convert"), () => onDeliver("convert"), { disabled: none })}
       {item(<SelectAllIcon />, t("overlay.select_all"), onSelectAll)}
       <div className="menu__separator" role="separator" />
       {item(<CloseIcon />, t("overlay.cancel"), onCancel, { hint: "Esc", danger: true })}

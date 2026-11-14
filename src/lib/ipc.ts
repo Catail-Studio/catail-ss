@@ -12,6 +12,8 @@ export interface OverlayInfo {
   height: number;
   /** Items already queued; decides between "create queue" and "add to queue". */
   queueCount: number;
+  /** Catail Convert is on this computer: the toolbar offers "Dönüştür". */
+  convertInstalled: boolean;
   /** Every Ctrl+C goes into the queue while on. */
   textMode: boolean;
   /** Where queued captures fly to (the badge), physical px relative to this monitor. */
@@ -210,7 +212,8 @@ export const captureDeliverDesktop = (rect: DesktopRect, action: Delivery) =>
 /** A selection over several monitors as PNG bytes, to draw the drawings on. */
 export const captureStitch = (rect: DesktopRect) => invoke<ArrayBuffer>("capture_stitch", { rect });
 /** What to do with a capture: copy it, add it to the queue (starting one if needed), or save it. */
-export type Delivery = "copy" | "enqueue" | "save";
+/** "convert" opens the capture in Catail Convert (when it is installed). */
+export type Delivery = "copy" | "enqueue" | "save" | "convert";
 
 /** Selection without drawings; Rust crops the frozen frame pixel for pixel. */
 export const captureDeliver = (rect: ImageRect, action: Delivery) =>
@@ -411,3 +414,8 @@ export const PanelEvents = {
   /** Files are being dragged over the panel (true) or have left it (false). */
   dropHover: "panel:drop-hover",
 } as const;
+
+/** Whether Catail Convert is on this computer. */
+export const convertInstalled = () => invoke<boolean>("convert_installed");
+/** Opens these queue items (all of them without ids) in Catail Convert. */
+export const queueConvert = (ids?: string[]) => invoke<void>("queue_convert", { ids: ids ?? null });

@@ -6,7 +6,8 @@
     "tooltip": "Catail — снимок экрана клавишей PrtSc",
     "capture": "Сделать снимок экрана",
     "settings": "Настройки",
-    "quit": "Выход"
+    "quit": "Выход",
+    "convert": "Открыть Catail Convert"
   },
   "overlay": {
     "hint": "Потяните, чтобы выделить область · Esc: отмена",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Копировать текст из QR-кода",
     "qr_copied": "Скопировано ✓",
     "qr_text": "QR-код",
-    "tool_crop": "Обрезать"
+    "tool_crop": "Обрезать",
+    "convert": "Преобразовать",
+    "convert_title": "Преобразовать в Catail Convert"
   },
   "save": {
     "dialog_title": "Сохранить снимок экрана",
@@ -229,7 +232,9 @@
     "zoom": "Увеличить и изменить",
     "title_short": "Очередь",
     "drop_hint": "Отпустите, чтобы добавить",
-    "pdf_preview": "Просмотр PDF"
+    "pdf_preview": "Просмотр PDF",
+    "convert": "Преобразовать в Catail Convert",
+    "convert_selected": "Преобразовать выбранное в Catail Convert"
   },
   "ocr": {
     "no_language": "В Windows нет языкового пакета для распознавания текста. Добавьте его в Параметры → Время и язык → Язык.",
@@ -269,5 +274,10 @@
     "pdf_password": "Этот PDF защищён паролем, показать его нельзя.",
     "pdf_zoom_in": "Увеличить (+)",
     "pdf_zoom_out": "Уменьшить (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert не найден",
+    "capture_name": "Снимок экрана",
+    "text_name": "Текст"
   }
 }

@@ -6,7 +6,8 @@
     "tooltip": "Catail — PrintScreen ile ekran görüntüsü al",
     "capture": "Ekran görüntüsü al",
     "settings": "Ayarlar",
-    "quit": "Çıkış"
+    "quit": "Çıkış",
+    "convert": "Catail Convert'i aç"
   },
   "overlay": {
     "hint": "Alan seçmek için sürükleyin · Esc: iptal",
@@ -66,7 +67,9 @@
     "qr_copy_text": "QR koddaki yazıyı kopyala",
     "qr_copied": "Kopyalandı ✓",
     "qr_text": "QR kod",
-    "tool_crop": "Kırp"
+    "tool_crop": "Kırp",
+    "convert": "Dönüştür",
+    "convert_title": "Catail Convert ile dönüştür"
   },
   "save": {
     "dialog_title": "Ekran görüntüsünü kaydet",
@@ -229,7 +232,9 @@
     "zoom": "Büyüt ve düzenle",
     "title_short": "Kuyruk",
     "drop_hint": "Kuyruğa eklemek için bırak",
-    "pdf_preview": "PDF'i önizle"
+    "pdf_preview": "PDF'i önizle",
+    "convert": "Catail Convert ile dönüştür",
+    "convert_selected": "Seçilenleri Catail Convert ile dönüştür"
   },
   "ocr": {
     "no_language": "Windows'ta metin tanıma için dil paketi yok. Ayarlar → Zaman ve dil → Dil bölümünden Türkçe ya da İngilizce dil paketini ekle.",
@@ -269,5 +274,10 @@
     "pdf_password": "Bu PDF parolalı olduğu için gösterilemiyor.",
     "pdf_zoom_in": "Yakınlaştır (+)",
     "pdf_zoom_out": "Uzaklaştır (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert bulunamadı",
+    "capture_name": "Ekran görüntüsü",
+    "text_name": "Metin"
   }
 }

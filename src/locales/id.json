@@ -6,7 +6,8 @@
     "tooltip": "Catail — tangkapan layar dengan PrintScreen",
     "capture": "Ambil tangkapan layar",
     "settings": "Pengaturan",
-    "quit": "Keluar"
+    "quit": "Keluar",
+    "convert": "Buka Catail Convert"
   },
   "overlay": {
     "hint": "Seret untuk memilih area · Esc: batal",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Salin teks di kode QR",
     "qr_copied": "Disalin ✓",
     "qr_text": "Kode QR",
-    "tool_crop": "Pangkas"
+    "tool_crop": "Pangkas",
+    "convert": "Konversi",
+    "convert_title": "Konversi dengan Catail Convert"
   },
   "save": {
     "dialog_title": "Simpan tangkapan layar",
@@ -229,7 +232,9 @@
     "zoom": "Perbesar dan edit",
     "title_short": "Antrean",
     "drop_hint": "Lepas untuk menambahkan ke antrean",
-    "pdf_preview": "Pratinjau PDF"
+    "pdf_preview": "Pratinjau PDF",
+    "convert": "Konversi dengan Catail Convert",
+    "convert_selected": "Konversi yang dipilih dengan Catail Convert"
   },
   "ocr": {
     "no_language": "Windows tidak punya paket bahasa untuk pengenalan teks. Tambahkan di Pengaturan → Waktu & bahasa → Bahasa.",
@@ -269,5 +274,10 @@
     "pdf_password": "PDF ini dilindungi kata sandi dan tidak dapat ditampilkan.",
     "pdf_zoom_in": "Perbesar (+)",
     "pdf_zoom_out": "Perkecil (-)"
+  },
+  "convert": {
+    "missing": "Catail Convert tidak ditemukan",
+    "capture_name": "Tangkapan layar",
+    "text_name": "Teks"
   }
 }

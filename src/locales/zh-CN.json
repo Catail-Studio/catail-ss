@@ -6,7 +6,8 @@
     "tooltip": "Catail — 按 PrintScreen 截图",
     "capture": "截图",
     "settings": "设置",
-    "quit": "退出"
+    "quit": "退出",
+    "convert": "打开 Catail Convert"
   },
   "overlay": {
     "hint": "拖动选择区域 · Esc：取消",
@@ -66,7 +67,9 @@
     "qr_copy_text": "复制二维码中的文字",
     "qr_copied": "已复制 ✓",
     "qr_text": "二维码",
-    "tool_crop": "裁剪"
+    "tool_crop": "裁剪",
+    "convert": "转换",
+    "convert_title": "用 Catail Convert 转换"
   },
   "save": {
     "dialog_title": "保存截图",
@@ -229,7 +232,9 @@
     "zoom": "放大并编辑",
     "title_short": "队列",
     "drop_hint": "松开以加入队列",
-    "pdf_preview": "预览 PDF"
+    "pdf_preview": "预览 PDF",
+    "convert": "用 Catail Convert 转换",
+    "convert_selected": "用 Catail Convert 转换所选项"
   },
   "ocr": {
     "no_language": "Windows 中没有用于文字识别的语言包。请在“设置 → 时间和语言 → 语言”中添加。",
@@ -269,5 +274,10 @@
     "pdf_password": "此 PDF 受密码保护,无法显示。",
     "pdf_zoom_in": "放大 (+)",
     "pdf_zoom_out": "缩小 (-)"
+  },
+  "convert": {
+    "missing": "未找到 Catail Convert",
+    "capture_name": "屏幕截图",
+    "text_name": "文本"
   }
 }

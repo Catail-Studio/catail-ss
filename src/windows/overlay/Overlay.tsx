@@ -82,7 +82,7 @@ import {
   type Rect,
   type Size,
 } from "./geometry";
-import { CameraIcon, CopyIcon, QueueAddIcon, SaveIcon, ScanTextIcon, TextModeIcon, TrashIcon } from "./icons";
+import { CameraIcon, ConvertIcon, CopyIcon, QueueAddIcon, SaveIcon, ScanTextIcon, TextModeIcon, TrashIcon } from "./icons";
 import { OcrCard, type OcrState } from "./OcrCard";
 import { QrLinks } from "./QrLinks";
 import { Sidebar } from "./Sidebar";
@@ -1098,6 +1098,11 @@ export function Overlay() {
           <button type="button" data-label={t("overlay.read_text_title")} onClick={() => void readText()}>
             <ScanTextIcon />
           </button>
+          {info?.convertInstalled && (
+            <button type="button" data-label={t("overlay.convert_title")} onClick={() => void finish("convert")}>
+              <ConvertIcon />
+            </button>
+          )}
           <button
             type="button"
             className={`overlay__enqueue ${primaryClass("enqueue") ?? ""}`}
@@ -1130,6 +1135,7 @@ export function Overlay() {
           hasSelection={selection !== null}
           hasQueue={hasQueue}
           primary={primary}
+          canConvert={info?.convertInstalled ?? false}
           onClose={() => setMenu(null)}
           onDeliver={(action) => void finish(action)}
           onSelectAll={selectAll}

@@ -6,7 +6,8 @@
     "tooltip": "Catail — zrzut ekranu klawiszem PrtSc",
     "capture": "Zrób zrzut ekranu",
     "settings": "Ustawienia",
-    "quit": "Zakończ"
+    "quit": "Zakończ",
+    "convert": "Otwórz Catail Convert"
   },
   "overlay": {
     "hint": "Przeciągnij, aby zaznaczyć obszar · Esc: anuluj",
@@ -66,7 +67,9 @@
     "qr_copy_text": "Kopiuj tekst z kodu QR",
     "qr_copied": "Skopiowano ✓",
     "qr_text": "Kod QR",
-    "tool_crop": "Przytnij"
+    "tool_crop": "Przytnij",
+    "convert": "Konwertuj",
+    "convert_title": "Konwertuj w Catail Convert"
   },
   "save": {
     "dialog_title": "Zapisz zrzut ekranu",
@@ -229,7 +232,9 @@
     "zoom": "Powiększ i edytuj",
     "title_short": "Kolejka",
     "drop_hint": "Upuść, aby dodać do kolejki",
-    "pdf_preview": "Podgląd PDF"
+    "pdf_preview": "Podgląd PDF",
+    "convert": "Konwertuj w Catail Convert",
+    "convert_selected": "Konwertuj zaznaczone w Catail Convert"
   },
   "ocr": {
     "no_language": "Windows nie ma pakietu językowego do rozpoznawania tekstu. Dodaj go w Ustawienia → Czas i język → Język.",
@@ -269,5 +274,10 @@
     "pdf_password": "Ten PDF jest chroniony hasłem i nie można go wyświetlić.",
     "pdf_zoom_in": "Powiększ (+)",
     "pdf_zoom_out": "Pomniejsz (-)"
+  },
+  "convert": {
+    "missing": "Nie znaleziono Catail Convert",
+    "capture_name": "Zrzut ekranu",
+    "text_name": "Tekst"
   }
 }

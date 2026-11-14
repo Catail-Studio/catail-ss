@@ -207,6 +207,19 @@ export function QueueAddIcon() {
   );
 }
 
+/** Catail Convert: a file turning into another. */
+export function ConvertIcon({ size = 18 }: { size?: number }) {
+  return (
+    <Icon size={size}>
+      <path d="M4 8a8 8 0 0 1 14-3l2 2" />
+      <path d="M20 3v4h-4" />
+      <path d="M20 16a8 8 0 0 1-14 3l-2-2" />
+      <path d="M4 21v-4h4" />
+      <path d="M10 9h4v6h-4z" />
+    </Icon>
+  );
+}
+
 export function ZoomIcon() {
   return (
     <Icon size={15}>
