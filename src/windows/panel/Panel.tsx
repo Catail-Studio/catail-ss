@@ -349,6 +349,21 @@ export function Panel() {
             {!LIST && t("panel.title_short")}
             <span className="panel__count">{items.length}</span>
           </h1>
+          {canConvert && items.length > 0 && (
+            // Catail Convert: what's picked, or else the whole queue.
+            <button
+              type="button"
+              className="panel__convert"
+              title={selected.size > 0 ? t("panel.convert_selected") : t("panel.convert")}
+              onClick={() =>
+                void queueConvert(
+                  selected.size > 0 ? items.filter((item) => selected.has(item.id)).map((item) => item.id) : undefined,
+                )
+              }
+            >
+              <ConvertIcon size={14} />
+            </button>
+          )}
           <button type="button" className="panel__icon-button" title={t("panel.close")} onClick={close}>
             <CloseIcon />
           </button>
@@ -455,16 +470,6 @@ export function Panel() {
               <PasteIcon />
               {t("panel.paste_selected_short")}
             </button>
-            {canConvert && (
-              <button
-                type="button"
-                className="panel__icon-button"
-                title={t("panel.convert_selected")}
-                onClick={() => void queueConvert(items.filter((item) => selected.has(item.id)).map((item) => item.id))}
-              >
-                <ConvertIcon size={16} />
-              </button>
-            )}
           </div>
         )}
 
@@ -488,16 +493,6 @@ export function Panel() {
               <PasteIcon />
               <span className="panel__picked-number">{selected.size}</span>
             </button>
-            {canConvert && (
-              <button
-                type="button"
-                className="panel__button"
-                data-label={t("panel.convert_selected")}
-                onClick={() => void queueConvert(items.filter((item) => selected.has(item.id)).map((item) => item.id))}
-              >
-                <ConvertIcon size={17} />
-              </button>
-            )}
           </footer>
         ) : (
           <footer key="all" className="panel__footer">
@@ -531,17 +526,6 @@ export function Panel() {
                 </div>
               )}
             </div>
-
-            {canConvert && (
-              <button
-                type="button"
-                className="panel__button"
-                data-label={t("panel.convert")}
-                onClick={() => void queueConvert()}
-              >
-                <ConvertIcon size={LIST ? 15 : 17} />
-              </button>
-            )}
 
             <button
               type="button"

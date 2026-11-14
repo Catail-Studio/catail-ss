@@ -95,6 +95,33 @@ button {
   font-weight: 600;
 }
 
+/* Catail Convert, at the top beside the cat: the queue (or what's picked) opens there. */
+.panel__convert {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  margin-right: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: var(--paw);
+  transition: background var(--fast) var(--ease-out), transform var(--fast) var(--ease-pop);
+}
+
+.panel__convert:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
 .panel__count {
   min-width: 18px;
   height: 18px;

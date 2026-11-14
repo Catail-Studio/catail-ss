@@ -126,7 +126,7 @@ function CatPuppet({
     >
       <span className={`stroll-actor__facing${view.right ? " stroll-actor__facing--right" : ""}`}>
         {picture && view.pose === "hang" ? (
-          // By its hands from a branch at the top of the screen.
+          // By its hands from the top edge of the screen.
           <span className="stroll-cat__hang stroll-cat__hang--picture">
             <span className="cat-seat monkey-pose">
               <img src={picture} alt="" draggable={false} />

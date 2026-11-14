@@ -890,9 +890,11 @@ body,
   height: 100%;
 }
 
-/* Hanging from a branch: it swings round its hands. */
+/* Hanging by its hands from the top edge of the screen (no branch: the screen is what it holds),
+   swinging round its hands. Raised so the fists close over the edge. */
 .stroll-cat__hang--picture {
-  transform-origin: 50% 22%;
+  translate: 0 -8px;
+  transform-origin: 50% 31%;
 }
 
 /* ---- The frog on the taskbar ---- */

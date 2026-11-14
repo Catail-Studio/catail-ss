@@ -5453,9 +5453,8 @@
   opacity: 0;
 }
 
-/* Up it jumps, catches the branch, and swings (the hanging picture has the monkey's hands on a
-   branch of its own, laid along the tree's): the trot does the jump, the facing the swing, round
-   its hands. */
+/* Up it jumps, catches the tree's branch, and swings (the hanging picture is the monkey alone, its
+   fists where the branch runs): the trot does the jump, the facing the swing, round its hands. */
 .cat-slot--swing .cat-slot__trot {
   animation: swing-jump 4400ms linear both;
 }

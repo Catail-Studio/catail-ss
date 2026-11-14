@@ -502,19 +502,27 @@ td:last-child {
 }
 
 /* Which animal: its themes are listed below. Each button shows that animal. */
+/* As many columns as fit, the rest on the next row: every animal in sight, however many there
+   are, and never a sideways scroll. */
 .animal-picker {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   gap: 8px;
   margin-bottom: 18px;
 }
 
 .animal-card {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 6px 16px 6px 8px;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 4px 6px;
   border: 2px solid var(--tint-200);
-  border-radius: 999px;
+  border-radius: var(--radius);
+  text-align: center;
+  overflow-wrap: anywhere;
   background: var(--tint-50);
   color: var(--ink-900);
   font: inherit;
