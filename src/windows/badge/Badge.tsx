@@ -45,10 +45,11 @@ import { drawPlay, isOuting, type Play, type Player } from "./plays";
 import { BUTTON_OUT_FOR_MS, BUTTON_OUT_MS, SHRED_MS, shredPlan } from "../../lib/shred";
 import { CloseIcon, UndoIcon } from "../overlay/icons";
 
-/** With nothing happening for this long, the badge's cat nods off... */
-const SLEEP_AFTER_MS = 40_000;
-/** ...for a nap this long (ms, at random between), then it wakes up by itself. */
-const NAP_MS: [number, number] = [45_000, 90_000];
+/** With nothing happening for this long, the badge's cat nods off: long enough that it is up to
+    its games most of the time, not asleep most of it... */
+const SLEEP_AFTER_MS = 180_000;
+/** ...for a short nap (ms, at random between), then it wakes up by itself. */
+const NAP_MS: [number, number] = [25_000, 50_000];
 /** Awake and left alone, it finds something to do this often (ms, at random between). */
 const IDLE_EVERY_MS: [number, number] = [3_500, 7_000];
 /** Before a nap it chases its own tail only now and then; otherwise it has a yawn and curls up. */
